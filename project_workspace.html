@@ -1463,6 +1463,55 @@
       pointer-events: none;
     }
 
+    .boundary-confirm-bar {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 31;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 8px 8px 8px 14px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #ffffff;
+      box-shadow: 0 10px 28px rgba(15, 23, 42, 0.14);
+    }
+
+    .boundary-confirm-bar[hidden] { display: none; }
+
+    .boundary-confirm-copy {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      color: var(--ink-secondary);
+      font-size: 12.5px;
+      white-space: nowrap;
+    }
+
+    .boundary-confirm-copy i,
+    .boundary-confirm-copy svg {
+      width: 15px;
+      height: 15px;
+      color: #10b981;
+      stroke-width: 2.5;
+    }
+
+    .boundary-confirm-button {
+      height: 34px;
+      padding: 0 16px;
+      border: 0;
+      border-radius: 999px;
+      background: var(--primary);
+      color: #ffffff;
+      font-size: 12.5px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .boundary-confirm-button:hover { background: var(--primary-hover); }
+
     .m-btn {
       display: grid;
       place-items: center;
@@ -2493,26 +2542,7 @@
               <span class="confetti-dot" style="background:#ef4444; bottom:-6px; right:6px; --tx:10px; --ty:16px; animation-delay:.54s;"></span>
             </div>
 
-            <h3 class="reveal-item">Great work — your site is mapped</h3>
-
-            <div class="complete-meta reveal-item">
-              <span class="complete-meta-item">
-                <i data-lucide="ruler" class="complete-meta-icon"></i>
-                <span id="completeAreaValue">— m²</span>
-              </span>
-              <span class="complete-meta-divider">•</span>
-              <span class="complete-meta-item">
-                <i data-lucide="map-pin" class="complete-meta-icon"></i>
-                <span id="completeLocationValue">—</span>
-              </span>
-            </div>
-
-            <button class="btn-main reveal-item" id="btnCompleteContinue" style="width:100%;">
-              <span>Continue to Workspace</span>
-              <i data-lucide="arrow-right" style="width:16px;height:16px;"></i>
-            </button>
-
-            <button type="button" class="location-skip reveal-item" id="btnModifyLocationFromComplete">Discard markup &amp; modify location</button>
+            <h3 class="reveal-item">Project setup completed</h3>
           </div>
         </div>
 
@@ -2574,6 +2604,14 @@
             <i data-lucide="trash-2"></i>
             <span>Clear</span>
           </button>
+        </div>
+
+        <div class="boundary-confirm-bar" id="boundaryConfirmBar" hidden>
+          <span class="boundary-confirm-copy">
+            <i data-lucide="check-circle-2"></i>
+            <span>Autosaved · Drag points to refine</span>
+          </span>
+          <button type="button" class="boundary-confirm-button" id="btnConfirmArea">Confirm area</button>
         </div>
 
         <!-- Minimal Stats Chip -->
@@ -3308,6 +3346,8 @@
     const mapTools = document.getElementById("mapTools");
     const mapZoom = document.getElementById("mapZoom");
     const statsChip = document.getElementById("statsChip");
+    const boundaryConfirmBar = document.getElementById("boundaryConfirmBar");
+    const btnConfirmArea = document.getElementById("btnConfirmArea");
 
     const workspaceState = {
       locationConfirmed: false,
@@ -3470,6 +3510,7 @@
           statsValue.textContent = "— m²";
           workspaceState.boundarySaved = false;
           hasShownBoundaryComplete = false;
+          boundaryConfirmBar.hidden = true;
           mapContainer.classList.remove("boundary-editable");
           updateTabLocks();
           drawnPolygon.setAttribute("fill", "rgba(37, 99, 235, 0.15)");
@@ -3611,6 +3652,7 @@
       if (draggingPointIndex === null) return;
       points[draggingPointIndex] = getSvgPos(e);
       renderPoints();
+      positionBoundaryConfirmBar();
     });
 
     mapDrawLayer.addEventListener("pointerup", () => {
@@ -3666,7 +3708,7 @@
       rubberbandPath.setAttribute("d", "");
       renderPoints();
       zoomToBoundary();
-      autosaveBoundary(true);
+      autosaveBoundary();
       showToast("Perfect — your markup is saved. You can still adjust any point.");
     }
 
@@ -3683,7 +3725,7 @@
 
     let hasShownBoundaryComplete = false;
 
-    function autosaveBoundary(showCompletion) {
+    function autosaveBoundary() {
       if (points.length < 3) return;
       statsLabel.textContent = "Site Area (Autosaved)";
       mapFadedMask.style.opacity = "0.15";
@@ -3695,16 +3737,41 @@
       selectedTool = "pan";
       setToolbarActive("pan");
       updateTabLocks();
-      document.getElementById("completeAreaValue").textContent = statsValue.textContent;
-      document.getElementById("completeLocationValue").textContent =
-        (workspaceState.selectedLocation && workspaceState.selectedLocation.name) || "—";
+      mapTools.classList.remove("collapsed");
+      boundaryConfirmBar.hidden = false;
+      positionBoundaryConfirmBar();
+    }
 
-      mapTools.classList.add("collapsed");
+    function positionBoundaryConfirmBar() {
+      if (points.length < 3 || boundaryConfirmBar.hidden) return;
 
-      if (showCompletion && !hasShownBoundaryComplete) {
-        hasShownBoundaryComplete = true;
-        setTimeout(() => openModal(document.getElementById("setupCompleteModal")), 900);
+      let twiceArea = 0;
+      let centroidX = 0;
+      let centroidY = 0;
+
+      points.forEach((point, index) => {
+        const next = points[(index + 1) % points.length];
+        const cross = point.x * next.y - next.x * point.y;
+        twiceArea += cross;
+        centroidX += (point.x + next.x) * cross;
+        centroidY += (point.y + next.y) * cross;
+      });
+
+      if (Math.abs(twiceArea) > 0.001) {
+        centroidX /= 3 * twiceArea;
+        centroidY /= 3 * twiceArea;
+      } else {
+        centroidX = points.reduce((sum, point) => sum + point.x, 0) / points.length;
+        centroidY = points.reduce((sum, point) => sum + point.y, 0) / points.length;
       }
+
+      const halfWidth = boundaryConfirmBar.offsetWidth / 2;
+      const halfHeight = boundaryConfirmBar.offsetHeight / 2;
+      const safeX = Math.max(halfWidth + 12, Math.min(mapContainer.clientWidth - halfWidth - 12, centroidX));
+      const safeY = Math.max(halfHeight + 12, Math.min(mapContainer.clientHeight - halfHeight - 12, centroidY));
+
+      boundaryConfirmBar.style.left = `${safeX}px`;
+      boundaryConfirmBar.style.top = `${safeY}px`;
     }
 
     function calculateArea() {
@@ -3730,6 +3797,7 @@
       statsValue.textContent = "— m²";
       workspaceState.boundarySaved = false;
       hasShownBoundaryComplete = false;
+      boundaryConfirmBar.hidden = true;
       mapContainer.classList.remove("boundary-editable");
       drawnPolygon.setAttribute("fill", "rgba(37, 99, 235, 0.15)");
       drawnPolygon.setAttribute("stroke", "#2563eb");
@@ -3740,19 +3808,16 @@
 
     toolClear.addEventListener("click", () => clearBoundary());
 
-    document.getElementById("btnCompleteContinue").addEventListener("click", () => {
-      closeModal(document.getElementById("setupCompleteModal"));
-      showToast("Workspace ready — start building.");
+    btnConfirmArea.addEventListener("click", () => {
+      if (points.length < 3) return;
+      hasShownBoundaryComplete = true;
+      boundaryConfirmBar.hidden = true;
+      openModal(document.getElementById("setupCompleteModal"));
 
       setTimeout(() => {
-        openModal(document.getElementById("plannerReadyModal"));
-      }, 550);
-    });
-
-    document.getElementById("btnModifyLocationFromComplete").addEventListener("click", () => {
-      closeModal(document.getElementById("setupCompleteModal"));
-      clearBoundary("Markup discarded — pick a new location.");
-      reopenLocationSearch();
+        closeModal(document.getElementById("setupCompleteModal"));
+        setTimeout(() => openModal(document.getElementById("plannerReadyModal")), 260);
+      }, 1500);
     });
 
     // Final step of the whole setup flow — nothing opens after this closes
