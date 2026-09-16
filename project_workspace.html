@@ -1,0 +1,4802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Project Workspace</title>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+  <!-- GSAP for modal entrance/exit animation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <!-- Three.js for 3D Viewer -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+  <style>
+    @font-face {
+      font-family: "Mona Sans";
+      src: url("https://cdn.jsdelivr.net/npm/@fontsource-variable/mona-sans/files/mona-sans-latin-wght-normal.woff2") format("woff2");
+      font-weight: 200 900;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    :root {
+      --bg: #ffffff;
+      --bg-page: #f8fafc;
+      --surface: #ffffff;
+      --ink: #0f172a;
+      --ink-secondary: #334155;
+      --muted: #64748b;
+      --muted-light: #94a3b8;
+      --line: #e2e8f0;
+      --line-subtle: #f1f5f9;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --primary-subtle: #eff6ff;
+      --success: #10b981;
+      --radius: 10px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: "Mona Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-page);
+      color: var(--ink);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+
+    /* =========================================
+       TOPBAR & UNDERLINED TABS
+       ========================================= */
+    .topbar {
+      height: 48px;
+      background: #ffffff;
+      border-bottom: 1px solid var(--line);
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      padding: 0 20px;
+      z-index: 50;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .topbar-right { justify-self: end; }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    /* =========================================
+       PROJECT SWITCHER — trigger pill + dropdown panel
+       ========================================= */
+    .project-switcher { position: relative; }
+
+    .project-switcher-trigger {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 8px 5px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: #f8fafc;
+      color: var(--primary);
+      font-size: 12.5px;
+      font-weight: 700;
+      max-width: 200px;
+      transition: 0.15s ease;
+    }
+
+    .project-switcher-trigger:hover { background: var(--primary-subtle); border-color: #93c5fd; }
+
+    .project-switcher-trigger span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .project-switcher-trigger i {
+      width: 14px;
+      height: 14px;
+      color: var(--muted);
+      flex-shrink: 0;
+      transition: transform 0.15s ease;
+    }
+
+    .project-switcher-trigger.open i { transform: rotate(180deg); }
+
+    .project-switcher-panel {
+      display: none;
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 0;
+      width: 300px;
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: 0 16px 36px -10px rgba(15, 23, 42, 0.18);
+      z-index: 200;
+      overflow: hidden;
+    }
+
+    .project-switcher-panel.open { display: block; }
+
+    .project-switcher-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 10px 8px 10px 14px;
+      border-bottom: 1px solid var(--line-subtle);
+    }
+
+    .project-switcher-current {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--primary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .project-switcher-head-actions {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+
+    .project-switcher-head-actions button {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      display: grid;
+      place-items: center;
+      transition: 0.15s ease;
+    }
+
+    .project-switcher-head-actions button:hover { background: #f1f5f9; color: var(--ink); }
+
+    .project-switcher-head-actions button i,
+    .project-switcher-head-actions button svg {
+      width: 13px;
+      height: 13px;
+      stroke-width: 1.9;
+    }
+
+    .project-switcher-rename-input {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--primary);
+      border: 1px solid #93c5fd;
+      border-radius: 6px;
+      padding: 2px 6px;
+      outline: 0;
+      font-family: inherit;
+      max-width: 160px;
+      background: #ffffff;
+    }
+
+    .project-switcher-tabs {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 10px 0;
+    }
+
+    .project-switcher-tab {
+      padding: 6px 4px;
+      border: 0;
+      background: transparent;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      border-bottom: 2px solid transparent;
+    }
+
+    .project-switcher-tab.active { color: var(--primary); border-color: var(--primary); }
+
+    .project-switcher-tabs .project-switcher-search {
+      margin-left: auto;
+      color: var(--muted-light);
+      display: grid;
+      place-items: center;
+      padding: 0 6px;
+    }
+
+    .project-switcher-tabs .project-switcher-search i { width: 14px; height: 14px; }
+
+    .project-switcher-list {
+      max-height: 240px;
+      overflow-y: auto;
+      padding: 6px 6px;
+    }
+
+    .project-switcher-item {
+      width: 100%;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 8px;
+      border: 0;
+      background: transparent;
+      border-radius: 8px;
+      font-size: 12.5px;
+      font-weight: 500;
+      color: var(--ink-secondary);
+      text-align: left;
+      transition: 0.12s ease;
+    }
+
+    .project-switcher-item:hover { background: #f8fafc; }
+    .project-switcher-item.current { color: var(--ink); font-weight: 600; }
+
+    .project-switcher-avatar {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      color: #ffffff;
+      font-size: 10.5px;
+      font-weight: 700;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+
+    .project-switcher-item-name {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .project-switcher-check {
+      width: 15px;
+      height: 15px;
+      stroke-width: 1.8;
+      color: var(--primary);
+      flex-shrink: 0;
+    }
+
+    .project-switcher-footer {
+      display: grid;
+      grid-template-columns: 118px minmax(0, 1fr);
+      gap: 8px;
+      padding: 10px;
+      border-top: 1px solid var(--line-subtle);
+    }
+
+    .project-switcher-browse,
+    .project-switcher-create {
+      width: 100%;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 0 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1;
+      white-space: nowrap;
+      transition: 0.15s ease;
+    }
+
+    .project-switcher-browse {
+      border: 1px solid var(--line);
+      background: #ffffff;
+      color: var(--muted);
+    }
+
+    .project-switcher-browse:hover { background: #f8fafc; color: var(--ink); }
+
+    .project-switcher-create {
+      border: 0;
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    .project-switcher-create:hover { background: var(--primary-hover); }
+
+    .project-switcher-browse i,
+    .project-switcher-browse svg,
+    .project-switcher-create i,
+    .project-switcher-create svg {
+      width: 22px;
+      height: 22px;
+      padding: 4px;
+      border-radius: 6px;
+      stroke-width: 1.9;
+      flex: 0 0 auto;
+    }
+
+    .project-switcher-browse i,
+    .project-switcher-browse svg { background: #f1f5f9; }
+
+    .project-switcher-create i,
+    .project-switcher-create svg { background: rgba(255, 255, 255, 0.16); }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--ink);
+      text-decoration: none;
+    }
+
+    .brand-mark {
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
+      background: var(--ink);
+      color: #ffffff;
+      display: grid;
+      place-items: center;
+    }
+
+    .divider-vert {
+      width: 1px;
+      height: 20px;
+      background: var(--line);
+    }
+
+    .project-title {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--ink);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-badge {
+      font-size: 11px;
+      font-weight: 600;
+      color: #059669;
+      background: #ecfdf5;
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+
+    /* Simple Underlined Tabs */
+    .tabs-nav {
+      display: flex;
+      align-items: center;
+      height: 48px;
+      gap: 2px;
+    }
+
+    .tab-item {
+      height: 48px;
+      padding: 0 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12.5px;
+      font-weight: 500;
+      color: var(--muted);
+      background: transparent;
+      border: 0;
+      border-bottom: 2px solid transparent;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+      position: relative;
+    }
+
+    .tab-item:hover {
+      color: var(--ink);
+    }
+
+    .tab-item.active {
+      color: var(--primary);
+      font-weight: 600;
+      border-bottom: 2px solid var(--primary);
+    }
+
+    .tab-item i {
+      width: 14px;
+      height: 14px;
+    }
+
+    .tab-item.locked {
+      color: var(--muted-light);
+      cursor: not-allowed;
+    }
+
+    .tab-item.locked:hover {
+      color: var(--muted-light);
+    }
+
+    .tab-item.locked i {
+      width: 13px;
+      height: 13px;
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-subtle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12.5px;
+      font-weight: 500;
+      color: var(--muted);
+      background: #ffffff;
+      border: 1px solid var(--line);
+      padding: 6px 12px;
+      border-radius: 8px;
+      text-decoration: none;
+      transition: all 0.15s ease;
+    }
+
+    .btn-subtle:hover {
+      color: var(--ink);
+      border-color: #cbd5e1;
+      background: #f8fafc;
+    }
+
+    .btn-subtle:disabled,
+    .btn-subtle:disabled:hover {
+      opacity: 0.5;
+      cursor: not-allowed;
+      color: var(--muted);
+      border-color: var(--line);
+      background: #ffffff;
+    }
+
+    /* Workspace Content Area */
+    .workspace-content {
+      flex: 1;
+      position: relative;
+      display: flex;
+      overflow: hidden;
+      height: calc(100vh - 48px);
+      background: #ffffff;
+    }
+
+    /* =========================================
+       Small demo icon buttons in the topbar — open the Hierarchy
+       and Planner sidebars, which slide in from the left edge.
+       ========================================= */
+    .rail-btn {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      display: grid;
+      place-items: center;
+      transition: all 0.15s ease;
+      position: relative;
+    }
+
+    .rail-btn i { width: 15px; height: 15px; }
+
+    .rail-btn:hover {
+      background: #f1f5f9;
+      color: var(--ink);
+    }
+
+    .rail-btn.active {
+      background: var(--primary-subtle);
+      color: var(--primary);
+      border-color: #bfdbfe;
+    }
+
+    .rail-btn:disabled,
+    .rail-btn:disabled:hover {
+      opacity: 0.4;
+      cursor: not-allowed;
+      background: transparent;
+      color: var(--muted);
+    }
+
+    .rail-btn-label {
+      position: absolute;
+      top: 36px;
+      right: 0;
+      background: var(--ink);
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 5px 9px;
+      border-radius: 6px;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease, transform 0.15s ease;
+      transform: translateY(-4px);
+      z-index: 80;
+    }
+
+    .rail-btn:hover .rail-btn-label {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .tab-pane {
+      position: absolute;
+      inset: 0;
+      display: none;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+
+    .tab-pane.active {
+      display: flex;
+      opacity: 1;
+      pointer-events: auto;
+      z-index: 10;
+    }
+
+    /* Simple placeholder used by the newer views (Drone, Walkthrough, Split View, Coordination) */
+    .view-placeholder {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: #ffffff;
+      text-align: center;
+      padding: 24px;
+    }
+
+    .view-placeholder-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: #f1f5f9;
+      color: var(--muted-light);
+      display: grid;
+      place-items: center;
+    }
+
+    .view-placeholder-icon i { width: 24px; height: 24px; }
+
+    .view-placeholder h3 {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .view-placeholder p {
+      font-size: 12.5px;
+      color: var(--muted);
+      max-width: 280px;
+      line-height: 1.5;
+    }
+
+    .tab-pane.setup-pending {
+      background: #ffffff;
+    }
+
+    .tab-pane.setup-pending > * {
+      visibility: hidden;
+    }
+
+    /* =========================================
+       TAB 1: WHITISH MAP STYLES & FADED MASK
+       ========================================= */
+    .map-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background: #f1f5f9;
+      overflow: hidden;
+      cursor: grab;
+      user-select: none;
+    }
+
+    .map-container.drawing-mode {
+      cursor: crosshair !important;
+    }
+
+    .map-viewport {
+      position: absolute;
+      inset: 0;
+      transform-origin: center center;
+      transition: transform 0.75s cubic-bezier(0.22, 0.8, 0.2, 1);
+    }
+
+    /* Whitish / Clean Light Map SVG */
+    .map-svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border: 0;
+    }
+
+    .google-map-frame {
+      z-index: 1;
+      pointer-events: none;
+      background: #eef2f7;
+    }
+
+    /* Black mask faded above the map */
+    .map-faded-mask {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.28);
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    /* Interactive Drawing Layer */
+    .map-draw-layer {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 15;
+      pointer-events: none;
+    }
+
+    .map-container.drawing-mode .map-draw-layer {
+      pointer-events: auto;
+    }
+
+    .map-container.boundary-editable .map-draw-layer {
+      pointer-events: auto;
+    }
+
+    /* Simple, Uncrowded Popup — opacity/transform are driven by GSAP on open/close
+       (see openModal/closeModal in the script) so the entrance replays every time,
+       not just on first page load. */
+    .simple-modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 40;
+    }
+
+    .simple-modal-backdrop.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .simple-card {
+      position: relative;
+      width: 380px;
+      max-width: 90vw;
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: 0 16px 36px -10px rgba(15, 23, 42, 0.12);
+      padding: 24px;
+      text-align: center;
+    }
+
+    /* Soft mesh-gradient wash behind every modal's top preview section */
+    .reveal-item {
+      opacity: 0;
+    }
+
+    /* Animated SVG Icon */
+    .celebration-icon-wrap {
+      position: relative;
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 16px;
+      display: grid;
+      place-items: center;
+    }
+
+    .celebration-pulse-ring {
+      position: absolute;
+      inset: -6px;
+      border-radius: 50%;
+      background: rgba(37, 99, 235, 0.18);
+      animation: ringPulse 2s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
+    }
+
+    .celebration-circle {
+      position: relative;
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      display: grid;
+      place-items: center;
+      box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
+      animation: circlePop 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    /* Slowly-rotating dashed ring — "tracing a boundary" around the pin */
+    .boundary-ring {
+      position: absolute;
+      inset: -14px;
+      width: calc(100% + 28px);
+      height: calc(100% + 28px);
+      opacity: 0.6;
+      animation: boundarySpin 7s linear infinite;
+    }
+
+    @keyframes boundarySpin {
+      to { transform: rotate(360deg); }
+    }
+
+    .anim-check-svg {
+      width: 26px;
+      height: 26px;
+      stroke: #ffffff;
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+
+    .anim-check-svg path {
+      stroke-dasharray: 40;
+      stroke-dashoffset: 40;
+      animation: checkStroke 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) 0.25s forwards;
+    }
+
+    @keyframes ringPulse {
+      0% { transform: scale(0.88); opacity: 0.8; }
+      50% { transform: scale(1.22); opacity: 0; }
+      100% { transform: scale(1.22); opacity: 0; }
+    }
+
+    @keyframes circlePop {
+      0% { transform: scale(0.6); opacity: 0; }
+      70% { transform: scale(1.08); opacity: 1; }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes checkStroke {
+      to { stroke-dashoffset: 0; }
+    }
+
+    .simple-card h3 {
+      font-size: 19px;
+      font-weight: 750;
+      letter-spacing: -0.015em;
+      color: var(--ink);
+      margin-bottom: 6px;
+    }
+
+    .simple-card p {
+      font-size: 13.5px;
+      color: var(--muted);
+      line-height: 1.5;
+      margin-bottom: 22px;
+    }
+
+    /* =========================================
+       MAP "UNFOCUSED" STATE (before a location is chosen)
+       ========================================= */
+    .map-svg {
+      transition: filter 1.3s cubic-bezier(0.22, 0.8, 0.2, 1), transform 1.3s cubic-bezier(0.22, 0.8, 0.2, 1);
+    }
+
+    .map-svg.svg-unfocused {
+      filter: none;
+      transform: none;
+    }
+
+    .map-faded-mask {
+      opacity: 1;
+    }
+
+    .hidden-until-located {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s ease 0.15s;
+    }
+
+    /* Arrival Pin Drop */
+    .arrival-pin {
+      position: absolute;
+      left: 52%;
+      top: 45%;
+      z-index: 25;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      pointer-events: none;
+    }
+
+    .arrival-pin i {
+      width: 34px;
+      height: 34px;
+      color: #2563eb;
+      filter: drop-shadow(0 6px 10px rgba(37, 99, 235, 0.35));
+    }
+
+    .arrival-pin.drop {
+      animation: pinDrop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    .arrival-pin .pin-ring {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: rgba(37, 99, 235, 0.85);
+      box-shadow: 0 0 0 rgba(37, 99, 235, 0.5);
+      margin-top: -6px;
+    }
+
+    .arrival-pin.drop .pin-ring {
+      animation: pinRingPulse 1.8s ease-out 0.65s infinite;
+    }
+
+    @keyframes pinDrop {
+      0% { transform: translateY(-70px) scale(0.4); opacity: 0; }
+      55% { transform: translateY(6px) scale(1.12); opacity: 1; }
+      75% { transform: translateY(-5px) scale(0.94); }
+      100% { transform: translateY(0) scale(1); opacity: 1; }
+    }
+
+    @keyframes pinRingPulse {
+      0% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.45); }
+      100% { box-shadow: 0 0 0 22px rgba(37, 99, 235, 0); }
+    }
+
+    /* Location Search Modal */
+    .location-card {
+      width: 410px;
+      padding: 28px 24px 30px;
+    }
+
+    .location-card::before {
+      display: block;
+      height: 168px;
+      background-color: #f4f8ff;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='410' height='150' viewBox='0 0 410 150'%3E%3Cg fill='none' stroke-linecap='round'%3E%3Cpath d='M-25 34 C42 18 79 54 140 39 S238 12 302 32 S378 63 438 42' stroke='%2393b4df' stroke-width='2'/%3E%3Cpath d='M18 -12 C36 32 67 55 61 101 S47 142 52 168' stroke='%23b7cae6' stroke-width='7'/%3E%3Cpath d='M-18 116 C54 99 111 126 168 108 S260 73 321 90 S384 124 432 112' stroke='%23a9c1e1' stroke-width='3'/%3E%3Cpath d='M171 -16 C165 25 187 46 224 59 S286 78 299 119 S302 146 314 166' stroke='%23c1d1e8' stroke-width='5'/%3E%3Cpath d='M341 -18 C326 24 336 54 373 72 S419 83 432 104' stroke='%23a9c1e1' stroke-width='2'/%3E%3Cpath d='M91 6 L112 21 L102 45 L77 43 L68 23 Z M242 7 L272 15 L267 39 L235 34 Z M113 80 L143 70 L162 92 L146 119 L112 110 Z M326 102 L358 90 L382 112 L365 139 L330 132 Z' stroke='%23c7d6ea' stroke-width='1.5'/%3E%3C/g%3E%3C/svg%3E");
+      background-position: top center;
+      background-size: cover;
+      filter: none;
+      opacity: 0.58;
+      -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 42%, transparent 100%);
+      mask-image: linear-gradient(to bottom, #000 0%, #000 42%, transparent 100%);
+    }
+
+    .location-card > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .markup-card::before {
+      display: block;
+      height: 168px;
+      background-color: #f4f8ff;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='410' height='150' viewBox='0 0 410 150'%3E%3Cg fill='none' stroke-linecap='round'%3E%3Cpath d='M-25 34 C42 18 79 54 140 39 S238 12 302 32 S378 63 438 42' stroke='%2393b4df' stroke-width='2'/%3E%3Cpath d='M18 -12 C36 32 67 55 61 101 S47 142 52 168' stroke='%23b7cae6' stroke-width='7'/%3E%3Cpath d='M-18 116 C54 99 111 126 168 108 S260 73 321 90 S384 124 432 112' stroke='%23a9c1e1' stroke-width='3'/%3E%3Cpath d='M171 -16 C165 25 187 46 224 59 S286 78 299 119 S302 146 314 166' stroke='%23c1d1e8' stroke-width='5'/%3E%3Cpath d='M341 -18 C326 24 336 54 373 72 S419 83 432 104' stroke='%23a9c1e1' stroke-width='2'/%3E%3Cpath d='M91 6 L112 21 L102 45 L77 43 L68 23 Z M242 7 L272 15 L267 39 L235 34 Z M113 80 L143 70 L162 92 L146 119 L112 110 Z M326 102 L358 90 L382 112 L365 139 L330 132 Z' stroke='%23c7d6ea' stroke-width='1.5'/%3E%3C/g%3E%3C/svg%3E");
+      background-position: top center;
+      background-size: cover;
+      filter: none;
+      opacity: 0.58;
+      -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 42%, transparent 100%);
+      mask-image: linear-gradient(to bottom, #000 0%, #000 42%, transparent 100%);
+    }
+
+    .markup-card > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .complete-card::before {
+      display: none;
+    }
+
+    .location-card h3, .location-card > p { text-align: center; }
+
+    .location-card > p { margin-bottom: 26px; }
+
+    .location-card .btn-main { margin-top: 0; }
+
+    .location-icon-wrap {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 16px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: #eff6ff;
+      border: 1px solid #dbeafe;
+    }
+
+    .location-icon-circle {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: #2563eb;
+      display: grid;
+      place-items: center;
+      box-shadow: 0 6px 14px rgba(37, 99, 235, 0.22);
+    }
+
+    .location-icon-circle i,
+    .location-icon-circle svg {
+      width: 22px;
+      height: 22px;
+      color: #ffffff;
+      fill: #ffffff;
+      stroke: #ffffff;
+      stroke-width: 2;
+    }
+
+    .location-icon-circle svg circle {
+      fill: #2563eb;
+      stroke: #2563eb;
+    }
+
+    .location-search-field {
+      margin-top: 18px;
+      height: 46px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #f8fafc;
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      gap: 10px;
+      transition: 0.18s ease;
+      text-align: left;
+    }
+
+    .location-search-field:focus-within {
+      border-color: #93c5fd;
+      background: #ffffff;
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.08);
+    }
+
+    .location-search-icon { width: 16px; height: 16px; color: var(--muted-light); flex: 0 0 auto; }
+
+    .location-search-field input {
+      flex: 1;
+      min-width: 0;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      font-size: 13.5px;
+      color: var(--ink);
+    }
+
+    .location-go {
+      width: 32px;
+      height: 32px;
+      flex: 0 0 32px;
+      border: 0;
+      border-radius: 50%;
+      background: #2563eb;
+      color: #ffffff;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(37, 99, 235, 0.24);
+      transition: transform 0.16s ease, background 0.16s ease, opacity 0.16s ease;
+    }
+
+    .location-go:hover { background: #1d4ed8; transform: translateX(1px); }
+    .location-go:active { transform: scale(0.94); }
+    .location-go:disabled { opacity: 0.42; cursor: default; transform: none; }
+    .location-go i, .location-go svg { width: 16px; height: 16px; stroke-width: 2.4; }
+
+    .location-suggestions {
+      max-height: 0;
+      overflow: hidden;
+      border-radius: 12px;
+      transition: max-height 0.25s ease;
+      text-align: left;
+    }
+
+    .location-suggestions.show {
+      max-height: 230px;
+      overflow-y: auto;
+      border: 1px solid var(--line-subtle);
+      margin-top: 8px;
+    }
+
+    .location-suggestion-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      cursor: pointer;
+      transition: 0.12s ease;
+    }
+
+    .location-suggestion-item:hover { background: #f8fafc; }
+    .location-suggestion-item i { width: 15px; height: 15px; color: var(--muted-light); flex: 0 0 auto; }
+    .location-suggestion-name { font-size: 12.5px; font-weight: 600; color: var(--ink); }
+    .location-suggestion-sub { font-size: 11px; color: var(--muted); }
+
+    /* Location finder bar — floats over the map itself, Maps-style */
+    .map-search-bar {
+      position: absolute;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-8px);
+      width: min(420px, 88%);
+      z-index: 32;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.22, 0.8, 0.2, 1);
+    }
+
+    .map-search-bar.show {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .map-search-bar .location-search-field {
+      margin-top: 0;
+      background: #ffffff;
+      box-shadow: 0 10px 28px rgba(15, 23, 42, 0.14);
+    }
+
+    .map-search-bar .location-suggestions.show {
+      background: #ffffff;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
+      border-radius: 14px;
+    }
+
+    .field-spinner {
+      display: none;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      border: 2px solid rgba(37, 99, 235, 0.22);
+      border-top-color: var(--primary);
+      animation: btnSpin 0.8s linear infinite;
+      flex: 0 0 auto;
+    }
+
+    .location-search-field.loading .location-search-icon { display: none; }
+    .location-search-field.loading .location-go { display: none; }
+    .location-search-field.loading .field-spinner { display: inline-block; }
+    .location-search-field.loading input { color: var(--muted); }
+
+    .location-skip {
+      display: block;
+      width: 100%;
+      text-align: center;
+      margin-top: 12px;
+      font-size: 12px;
+      color: var(--muted);
+      background: none;
+      border: 0;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    .location-skip:hover { color: var(--ink); }
+
+    .simple-card .btn-main {
+      position: relative;
+      margin-top: 20px;
+    }
+
+    .btn-main .btn-spinner {
+      display: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.4);
+      border-top-color: #ffffff;
+      animation: btnSpin 0.8s linear infinite;
+    }
+
+    .btn-main.loading { opacity: 0.8; cursor: default; pointer-events: none; }
+    .btn-main.loading .btn-main-arrow { display: none; }
+    .btn-main.loading .btn-spinner { display: inline-block; }
+
+    @keyframes btnSpin { to { transform: rotate(360deg); } }
+
+    /* Setup Complete Modal */
+    .complete-card { width: 410px; }
+    .complete-card h3 { margin-bottom: 14px; }
+    .complete-card .complete-meta { margin: 0 0 20px; }
+    .complete-card .btn-main { margin-top: 0; }
+
+    .confetti-dot {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      opacity: 0;
+      animation: confettiPop 0.8s ease forwards;
+    }
+
+    @keyframes confettiPop {
+      0% { transform: translate(0, 0) scale(0); opacity: 0; }
+      40% { opacity: 1; transform: translate(calc(var(--tx) * 0.5), calc(var(--ty) * 0.5)) scale(1.2); }
+      100% { transform: translate(var(--tx), var(--ty)) scale(0.4); opacity: 0; }
+    }
+
+    .complete-meta {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 2px 0 20px;
+    }
+
+    .complete-meta-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13.5px;
+      font-weight: 650;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+
+    .complete-meta-icon {
+      width: 15px;
+      height: 15px;
+      color: var(--primary);
+      flex: 0 0 auto;
+    }
+
+    .complete-meta-divider {
+      color: var(--muted-light);
+      font-size: 12px;
+    }
+
+    /* Setup Choice modal — "create hierarchy" vs "upload a drawing" */
+    .setup-choice-card { width: 420px; }
+
+    .setup-choice-options {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 4px;
+      text-align: left;
+    }
+
+    .setup-choice-option {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #ffffff;
+      transition: 0.15s ease;
+    }
+
+    .setup-choice-option:hover {
+      border-color: #93c5fd;
+      background: var(--primary-subtle);
+    }
+
+    .setup-choice-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: var(--primary-subtle);
+      color: var(--primary);
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+
+    .setup-choice-icon i { width: 17px; height: 17px; }
+
+    .setup-choice-text {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .setup-choice-text strong { font-size: 13.5px; font-weight: 700; color: var(--ink); }
+    .setup-choice-text span { font-size: 11.5px; color: var(--muted); }
+
+    .setup-choice-arrow { width: 15px; height: 15px; color: var(--muted-light); flex-shrink: 0; }
+
+    /* Final step — Project Planner ready */
+    .planner-card {
+      width: 420px;
+      padding-top: 30px;
+    }
+
+    /* Taller illustration needs a slightly taller wash than the icon-only modals */
+    .planner-close {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 0;
+      background: transparent;
+      color: var(--muted-light);
+      display: grid;
+      place-items: center;
+      transition: 0.15s ease;
+    }
+
+    .planner-close:hover { background: #f1f5f9; color: var(--ink); }
+    .planner-close i { width: 15px; height: 15px; }
+
+    .gantt-illustration {
+      position: relative;
+      width: 264px;
+      height: 92px;
+      margin: 0 auto 20px;
+    }
+
+    .gantt-today {
+      position: absolute;
+      top: -10px;
+      left: 64%;
+      width: 1.5px;
+      height: 104px;
+      background: #dbe2ea;
+    }
+
+    .gantt-today-dot {
+      position: absolute;
+      top: -4px;
+      left: -3.5px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--primary);
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.14);
+    }
+
+    .gantt-row {
+      position: relative;
+      height: 16px;
+      margin-bottom: 14px;
+    }
+
+    .gantt-track {
+      position: absolute;
+      inset: 0;
+      border-radius: 999px;
+      background: #eef1f6;
+    }
+
+    .gantt-bar {
+      position: absolute;
+      top: 0;
+      height: 16px;
+      border-radius: 999px;
+      display: flex;
+      align-items: center;
+      transform-origin: left center;
+      animation: ganttBarGrow 0.5s cubic-bezier(0.22, 0.8, 0.2, 1) both;
+    }
+
+    .gantt-bar-1 { left: 0; width: 58%; background: linear-gradient(90deg, #2563eb, #3b82f6); animation-delay: 0.08s; }
+    .gantt-bar-2 { left: 27%; width: 52%; background: linear-gradient(90deg, #7c5cff, #9376ff); animation-delay: 0.22s; }
+    .gantt-bar-3 { left: 42%; width: 46%; background: linear-gradient(90deg, #0ea87e, #14b8a6); animation-delay: 0.36s; }
+
+    @keyframes ganttBarGrow {
+      from { transform: scaleX(0); opacity: 0.4; }
+      to { transform: scaleX(1); opacity: 1; }
+    }
+
+    .gantt-bar-highlight {
+      height: 4px;
+      width: 55%;
+      margin-left: 14px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.55);
+    }
+
+    .gantt-check {
+      position: absolute;
+      top: 50%;
+      left: 86%;
+      transform: translateY(-50%) scale(0);
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #ffffff;
+      border: 2px solid #10b981;
+      display: grid;
+      place-items: center;
+      box-shadow: 0 4px 10px rgba(16, 185, 129, 0.22);
+      animation: ganttCheckPop 0.4s 0.62s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    .gantt-check i { width: 13px; height: 13px; color: #10b981; stroke-width: 3; }
+
+    @keyframes ganttCheckPop {
+      to { transform: translateY(-50%) scale(1); }
+    }
+
+    .planner-eyebrow {
+      color: var(--primary);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .gantt-bar { animation: none; transform: none; opacity: 1; }
+      .gantt-check { animation: none; transform: translateY(-50%) scale(1); }
+      .boundary-ring { animation: none; }
+    }
+
+    /* Segmented Tool Chooser */
+    .segmented-control {
+      display: flex;
+      background: #f1f5f9;
+      padding: 3px;
+      border-radius: 9px;
+      gap: 4px;
+      margin-bottom: 20px;
+    }
+
+    .seg-btn {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 7px 10px;
+      border-radius: 7px;
+      border: 0;
+      background: transparent;
+      font-size: 12.5px;
+      font-weight: 500;
+      color: var(--muted);
+      transition: all 0.15s ease;
+    }
+
+    .seg-btn.active {
+      background: #ffffff;
+      color: var(--ink);
+      font-weight: 600;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+
+    .seg-btn i {
+      width: 14px;
+      height: 14px;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-main {
+      flex: 1;
+      background: var(--primary);
+      color: #ffffff;
+      border: 0;
+      padding: 11px 24px;
+      border-radius: 999px;
+      font-size: 13.5px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+      transition: all 0.2s ease;
+    }
+
+    .btn-main:hover {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(37, 99, 235, 0.32);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--line);
+      padding: 9px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.15s ease;
+    }
+
+    .btn-ghost:hover {
+      color: var(--ink);
+      background: #f8fafc;
+    }
+
+    /* Minimal Floating Drawing Toolbar */
+    .map-tools {
+      position: absolute;
+      top: 50%;
+      left: 16px;
+      transform: translateY(-50%);
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.09);
+      z-index: 30;
+      opacity: 1;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    /* Drawing is done — the tools tuck away until the user reopens Mark Area or clears the boundary */
+    .map-tools.collapsed {
+      opacity: 0;
+      transform: translateY(-50%) translateX(-8px);
+      pointer-events: none;
+    }
+
+    .m-btn {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      padding: 0;
+      border-radius: 50%;
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      transition: all 0.15s ease;
+      flex-shrink: 0;
+      position: relative;
+    }
+
+    .m-btn:hover {
+      background: #f1f5f9;
+      color: var(--ink);
+    }
+
+    .m-btn.active {
+      background: var(--primary);
+      color: #ffffff;
+      box-shadow: 0 3px 10px rgba(37, 99, 235, 0.35);
+    }
+
+    .m-btn i {
+      width: 16px;
+      height: 16px;
+    }
+
+    .m-btn span {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+    }
+
+    .tool-sep {
+      width: 18px;
+      height: 1px;
+      background: var(--line);
+      margin: 2px 0;
+    }
+
+    /* Minimal Floating Stats HUD */
+    .stats-chip {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 12px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+      z-index: 30;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .stats-label {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .stats-value {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    /* Map Navigation Controls */
+    .map-zoom {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      z-index: 30;
+    }
+
+    .z-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      background: #ffffff;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      display: grid;
+      place-items: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      transition: all 0.15s ease;
+    }
+
+    .z-btn:hover {
+      color: var(--ink);
+      background: #f8fafc;
+    }
+
+    /* =========================================
+       TAB 2: 2D SETUP & SIDEBAR (Clean White Theme)
+       ========================================= */
+    .sidebar {
+      width: 290px;
+      background: #ffffff;
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      height: 100%;
+      overflow-y: auto;
+      z-index: 20;
+    }
+
+    .sidebar-head {
+      padding: 18px 18px 14px;
+      border-bottom: 1px solid var(--line-subtle);
+    }
+
+    .sidebar-head h3 {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 2px;
+    }
+
+    .sidebar-head p {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .sidebar-tree {
+      padding: 12px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .tree-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted-light);
+      padding: 8px 6px 4px;
+    }
+
+    .tree-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 7px 8px;
+      border-radius: 6px;
+      font-size: 12.5px;
+      color: var(--ink-secondary);
+      cursor: pointer;
+      transition: background 0.1s ease;
+    }
+
+    .tree-row:hover {
+      background: #f8fafc;
+      color: var(--ink);
+    }
+
+    .tree-row.active {
+      background: var(--primary-subtle);
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    .tree-row-left {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .tree-row i {
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+    }
+
+    .tree-indent-1 { padding-left: 22px; }
+    .tree-indent-2 { padding-left: 36px; font-size: 12px; }
+
+    .tag-pill {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: #f1f5f9;
+      color: var(--muted);
+    }
+
+    .tag-pill.blue {
+      background: var(--primary-subtle);
+      color: var(--primary);
+    }
+
+    .tag-pill.green {
+      background: #ecfdf5;
+      color: #059669;
+    }
+
+    /* 2D Canvas Light Viewer */
+    .viewer-2d {
+      flex: 1;
+      background: #f8fafc;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .drawing-sheet {
+      width: 82%;
+      max-width: 820px;
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+      transform-origin: center center;
+      transition: transform 0.1s ease;
+    }
+
+    .drawing-sheet-image {
+      display: none;
+      max-width: 84%;
+      max-height: 84%;
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+      cursor: pointer;
+      transition: box-shadow 0.15s ease, transform 0.15s ease;
+    }
+
+    .drawing-sheet-image:hover {
+      box-shadow: 0 14px 34px rgba(0, 0, 0, 0.12);
+      transform: translateY(-1px);
+    }
+
+    /* =========================================
+       TAB 3: 3D SETUP & THREE.JS CANVAS
+       ========================================= */
+    .three-d-view { cursor: pointer; }
+
+    #threeDContainer {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      inset: 0;
+    }
+
+    .view-overlay-3d {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      z-index: 15;
+    }
+
+    /* =========================================
+       PROJECT PLANNER DRAWER
+       Opens via "View Planner" (topbar) or "Explore planning"
+       (the closing setup modal). Seeded with dummy WBS data that
+       matches whichever project type was picked in the wizard.
+       ========================================= */
+    /* Both the Hierarchy and Planner drawers slide out from behind the rail */
+    .side-drawer {
+      position: fixed;
+      top: 48px;
+      left: 0;
+      bottom: 0;
+      width: 340px;
+      max-width: 90vw;
+      background: #ffffff;
+      border-right: 1px solid var(--line);
+      box-shadow: 14px 0 32px rgba(15, 23, 42, 0.1);
+      z-index: 65;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(-100%);
+      transition: transform 0.32s cubic-bezier(0.22, 0.8, 0.2, 1);
+    }
+
+    .side-drawer.open {
+      transform: translateX(0);
+    }
+
+    .drawer-head {
+      position: relative;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 18px 16px 14px;
+      border-bottom: 1px solid var(--line-subtle);
+      flex-shrink: 0;
+    }
+
+    .drawer-eyebrow {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 2px;
+    }
+
+    .drawer-head h3 {
+      font-size: 16px;
+      font-weight: 750;
+      color: var(--ink);
+    }
+
+    .drawer-close {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 0;
+      background: transparent;
+      color: var(--muted-light);
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      transition: 0.15s ease;
+    }
+
+    .drawer-close:hover { background: #f1f5f9; color: var(--ink); }
+    .drawer-close i { width: 15px; height: 15px; }
+
+    /* Header tools — a lone "+" that slides open on hover to reveal
+       collapse and search alongside it. */
+    .drawer-header-tools {
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+      margin-top: -1px;
+    }
+
+    .drawer-tool-btn {
+      width: 27px;
+      height: 27px;
+      border-radius: 7px;
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      transition: background 0.15s ease, color 0.15s ease, width 0.2s cubic-bezier(0.22, 0.8, 0.2, 1),
+        opacity 0.2s ease, transform 0.2s cubic-bezier(0.22, 0.8, 0.2, 1), margin 0.2s ease;
+    }
+
+    .drawer-tool-btn:hover { background: #f1f5f9; color: var(--ink); }
+    .drawer-tool-btn i { width: 15px; height: 15px; stroke-width: 1.8; }
+
+    .drawer-tool-collapse,
+    .drawer-tool-search {
+      width: 0;
+      opacity: 0;
+      transform: scale(0.7);
+      pointer-events: none;
+      margin-right: -6px;
+    }
+
+    .drawer-header-tools:hover .drawer-tool-collapse,
+    .drawer-header-tools:hover .drawer-tool-search,
+    .drawer-header-tools:focus-within .drawer-tool-collapse,
+    .drawer-header-tools:focus-within .drawer-tool-search {
+      width: 27px;
+      opacity: 1;
+      transform: scale(1);
+      pointer-events: auto;
+      margin-right: 0;
+    }
+
+    .drawer-tool-plus.active { background: var(--primary-subtle); color: var(--primary); }
+
+    .mini-popover {
+      position: absolute;
+      top: 100%;
+      right: 12px;
+      margin-top: 6px;
+      width: 178px;
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      box-shadow: 0 16px 32px -10px rgba(15, 23, 42, 0.2);
+      z-index: 95;
+      padding: 5px;
+    }
+
+    .mini-popover-item {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 8px 9px;
+      border: 0;
+      background: transparent;
+      border-radius: 8px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--ink-secondary);
+      text-align: left;
+      transition: 0.12s ease;
+    }
+
+    .mini-popover-item:hover { background: var(--primary-subtle); color: var(--primary); }
+    .mini-popover-item i { width: 14px; height: 14px; stroke-width: 1.8; color: var(--primary); flex-shrink: 0; }
+
+    .mini-popover-item:disabled {
+      cursor: not-allowed;
+      color: var(--muted-light);
+      background: transparent;
+    }
+
+    .mini-popover-item:disabled i { color: var(--muted-light); }
+
+    .mini-popover-item-text {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      min-width: 0;
+    }
+
+    .mini-popover-item-text small {
+      font-size: 10.5px;
+      font-weight: 500;
+      color: var(--muted);
+      white-space: normal;
+      line-height: 1.3;
+    }
+
+    .drawer-search-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--line-subtle);
+      flex-shrink: 0;
+      color: var(--muted-light);
+    }
+
+    .drawer-search-bar i:first-child { width: 14px; height: 14px; flex-shrink: 0; }
+
+    .drawer-search-bar input {
+      flex: 1;
+      min-width: 0;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      font-size: 12.5px;
+      color: var(--ink);
+      font-family: inherit;
+    }
+
+    .drawer-search-bar button {
+      border: 0;
+      background: transparent;
+      color: var(--muted-light);
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+
+    .drawer-search-bar button:hover { color: var(--ink); }
+    .drawer-search-bar button i { width: 13px; height: 13px; }
+
+    .drawer-toolbar {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--line-subtle);
+      flex-shrink: 0;
+    }
+
+    .drawer-add-root {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      border: 1px dashed var(--line);
+      background: #f8fafc;
+      color: var(--primary);
+      font-size: 12.5px;
+      font-weight: 600;
+      padding: 8px;
+      border-radius: 8px;
+      transition: 0.15s ease;
+    }
+
+    .drawer-add-root:hover { background: var(--primary-subtle); border-color: #93c5fd; }
+    .drawer-add-root i { width: 14px; height: 14px; }
+
+    .drawer-empty-hint {
+      padding: 18px 14px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    /* Offered when zones/levels haven't been set up yet (e.g. after a Quick Setup upload) */
+    .drawer-hierarchy-cta {
+      width: calc(100% - 12px);
+      margin: 10px 6px 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 9px 10px;
+      border: 1px dashed #93c5fd;
+      background: var(--primary-subtle);
+      color: var(--primary);
+      font-size: 12.5px;
+      font-weight: 650;
+      border-radius: 8px;
+      transition: 0.15s ease;
+    }
+
+    .drawer-hierarchy-cta:hover { background: #dbeafe; border-color: #60a5fa; }
+    .drawer-hierarchy-cta i { width: 14px; height: 14px; }
+
+    .drawer-tree {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 8px 24px;
+    }
+
+    /* Pinned to the bottom of the drawer — stays put while the tree above scrolls */
+    .drawer-sticky-footer {
+      flex-shrink: 0;
+      padding: 10px;
+      border-top: 1px solid var(--line-subtle);
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .planner-node {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 6px;
+      border-radius: 7px;
+      font-size: 12.5px;
+      color: var(--ink-secondary);
+      cursor: default;
+      transition: background 0.12s ease;
+    }
+
+    .planner-node:hover { background: #f8fafc; }
+    .planner-node.level-0 { font-weight: 650; color: var(--ink); }
+    .planner-node.level-1 { margin-left: 16px; font-weight: 560; }
+    .planner-node.level-2 { margin-left: 32px; color: var(--muted); }
+    .planner-node.level-3 { margin-left: 48px; color: var(--muted); }
+
+    /* The file/element currently open in a viewer, highlighted in the tree */
+    .planner-node.node-active {
+      background: var(--primary-subtle);
+      color: var(--primary);
+    }
+
+    .planner-node.node-active .planner-node-icon { color: var(--primary); }
+
+    /* Uploaded files double as a switcher — clicking one opens it in its viewer */
+    .planner-node[data-node-type="libraryFile"] { cursor: pointer; }
+
+    .planner-node-toggle {
+      width: 18px;
+      height: 18px;
+      flex: 0 0 auto;
+      border: 0;
+      background: transparent;
+      color: var(--muted-light);
+      display: grid;
+      place-items: center;
+      border-radius: 5px;
+      transition: 0.15s ease;
+    }
+
+    .planner-node-toggle:hover { background: #eef2f7; color: var(--ink); }
+    .planner-node-toggle svg { transition: transform 0.18s ease; }
+    .planner-node.collapsed .planner-node-toggle svg { transform: rotate(-90deg); }
+    .planner-node-toggle.spacer { visibility: hidden; }
+
+    .planner-node-icon { width: 14px; height: 14px; flex: 0 0 auto; color: var(--primary); }
+
+    .planner-node-dot {
+      width: 5px;
+      height: 5px;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      background: var(--muted-light);
+      margin: 0 4.5px;
+    }
+
+    .planner-node-label {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .planner-node-add {
+      width: 20px;
+      height: 20px;
+      flex: 0 0 auto;
+      border: 0;
+      background: transparent;
+      color: var(--muted-light);
+      display: grid;
+      place-items: center;
+      border-radius: 6px;
+      opacity: 0;
+      transition: 0.15s ease;
+    }
+
+    .planner-node:hover .planner-node-add { opacity: 1; }
+    .planner-node-add:hover { background: var(--primary-subtle); color: var(--primary); }
+    .planner-node-add svg { width: 12px; height: 12px; }
+
+    /* Rename / delete — used by the Hierarchy tree, where every node is editable */
+    .planner-node-edit,
+    .planner-node-delete {
+      width: 20px;
+      height: 20px;
+      flex: 0 0 auto;
+      border: 0;
+      background: transparent;
+      color: var(--muted-light);
+      display: grid;
+      place-items: center;
+      border-radius: 6px;
+      opacity: 0;
+      transition: 0.15s ease;
+    }
+
+    .planner-node:hover .planner-node-edit,
+    .planner-node:hover .planner-node-delete { opacity: 1; }
+    .planner-node-edit:hover { background: #eef2f7; color: var(--ink); }
+    .planner-node-delete:hover { background: #fff0f2; color: #e34d65; }
+    .planner-node-edit svg, .planner-node-delete svg { width: 12px; height: 12px; }
+
+    .planner-node-tag {
+      flex: 0 0 auto;
+      font-size: 9.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      background: #f1f5f9;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-right: 2px;
+    }
+
+    .planner-children.collapsed { display: none; }
+
+    .planner-add-input-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 6px 6px;
+    }
+
+    .planner-add-input-row input {
+      flex: 1;
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 5px 8px;
+      font-size: 12px;
+      outline: 0;
+      background: #f8fafc;
+    }
+
+    .planner-add-input-row input:focus { border-color: #93c5fd; background: #ffffff; }
+
+    .planner-rename-input {
+      flex: 1;
+      min-width: 0;
+      border: 1px solid #93c5fd;
+      border-radius: 5px;
+      padding: 2px 6px;
+      font-size: 12.5px;
+      font-family: inherit;
+      color: inherit;
+      outline: 0;
+      background: #ffffff;
+    }
+
+    /* Toast */
+    .toast-msg {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--ink);
+      color: #ffffff;
+      padding: 8px 18px;
+      border-radius: 999px;
+      font-size: 12.5px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+      z-index: 100;
+      transition: transform 0.25s ease, opacity 0.25s ease;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .toast-msg.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Bar with Simple Underlined Tabs -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="project-switcher" id="projectSwitcher">
+        <button type="button" class="project-switcher-trigger" id="projectSwitcherTrigger">
+          <span id="projectSwitcherName">Untitled Project</span>
+          <i data-lucide="chevron-down"></i>
+        </button>
+
+        <div class="project-switcher-panel" id="projectSwitcherPanel">
+          <div class="project-switcher-head">
+            <span class="project-switcher-current" id="projectSwitcherCurrentName">Untitled Project</span>
+            <div class="project-switcher-head-actions">
+              <button type="button" id="btnProjectSwitcherRename" title="Rename project"><i data-lucide="pencil"></i></button>
+              <button type="button" id="btnProjectSwitcherInvite" title="Invite"><i data-lucide="user-plus"></i></button>
+              <button type="button" id="btnProjectSwitcherAdd" title="Create a project"><i data-lucide="plus"></i></button>
+              <button type="button" id="btnProjectSwitcherToggle" title="Collapse"><i data-lucide="chevron-up"></i></button>
+            </div>
+          </div>
+
+          <div class="project-switcher-tabs">
+            <button type="button" class="project-switcher-tab active" data-tab="mine">My Projects</button>
+            <button type="button" class="project-switcher-tab" data-tab="shared">Shared</button>
+            <span class="project-switcher-search"><i data-lucide="search"></i></span>
+          </div>
+
+          <div class="project-switcher-list" id="projectSwitcherList"></div>
+
+          <div class="project-switcher-footer">
+            <button type="button" class="project-switcher-browse" id="btnBrowseAllProjects">
+              <i data-lucide="folder"></i><span>Browse all</span>
+            </button>
+            <button type="button" class="project-switcher-create" id="btnCreateProject">
+              <i data-lucide="plus"></i><span>Create a project</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Underlined view tabs -->
+    <nav class="tabs-nav">
+      <button class="tab-item active" data-target="tabMap" id="btnTabMap">
+        <i data-lucide="map"></i>
+        <span>Map</span>
+      </button>
+      <button class="tab-item" data-target="tab2D" id="btnTab2D" data-icon="file-text">
+        <i data-lucide="file-text"></i>
+        <span>2D</span>
+      </button>
+      <button class="tab-item" data-target="tab3D" id="btnTab3D" data-icon="box">
+        <i data-lucide="box"></i>
+        <span>3D</span>
+      </button>
+      <button class="tab-item" data-target="tabDrone" id="btnTabDrone" data-icon="plane">
+        <i data-lucide="plane"></i>
+        <span>Drone</span>
+      </button>
+      <button class="tab-item" data-target="tabWalkthrough" id="btnTabWalkthrough" data-icon="footprints">
+        <i data-lucide="footprints"></i>
+        <span>Walkthrough</span>
+      </button>
+      <button class="tab-item" data-target="tabSplit" id="btnTabSplit" data-icon="columns-2">
+        <i data-lucide="columns-2"></i>
+        <span>Split View</span>
+      </button>
+      <button class="tab-item" data-target="tabCoordination" id="btnTabCoordination" data-icon="network">
+        <i data-lucide="network"></i>
+        <span>Coordination</span>
+      </button>
+    </nav>
+
+    <div class="topbar-right">
+      <button type="button" class="rail-btn" id="railHierarchy" title="Layer Hierarchy">
+        <i data-lucide="layers-3"></i>
+        <span class="rail-btn-label">Layer Hierarchy</span>
+      </button>
+      <button type="button" class="rail-btn" id="railPlanner" disabled title="Set up the map first">
+        <i data-lucide="list-tree"></i>
+        <span class="rail-btn-label">Project Planner</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Workspace Content Area -->
+  <main class="workspace-content">
+
+    <!-- =========================================
+         TAB 1: WHITISH MAP
+         ========================================= -->
+    <div class="tab-pane active" id="tabMap">
+      <div class="map-container" id="mapContainer">
+
+        <!-- Map Viewport -->
+        <div class="map-viewport" id="mapViewport">
+          <!-- Clean Whitish Architectural Site Map SVG -->
+          <svg class="map-svg map-static-fallback" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <pattern id="lightGrid" width="40" height="40" patternUnits="userSpaceOnUse">
+                <rect width="40" height="40" fill="#f8fafc"/>
+                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#eef2f7" stroke-width="0.75"/>
+              </pattern>
+            </defs>
+
+            <!-- Base Whitish Map Land -->
+            <rect width="1600" height="1000" fill="url(#lightGrid)"/>
+
+            <!-- Soft Waterline (bottom-right coastline) -->
+            <path d="M1600,640 L1600,1000 L980,1000 L980,910 L1120,910 L1120,830 L1270,830 L1270,730 L1420,730 L1420,640 Z" fill="#eaf4fc" stroke="#d7ebf9" stroke-width="1.5"/>
+
+            <!-- Surrounding Greenery / Parks (Soft Subtle Sage) -->
+            <rect x="80" y="80" width="340" height="140" rx="6" fill="#f0fdf4" stroke="#dcfce7" stroke-width="1"/>
+            <g fill="#bbf0c8" opacity="0.55">
+              <circle cx="130" cy="120" r="3"/><circle cx="160" cy="150" r="3"/><circle cx="200" cy="110" r="3"/>
+              <circle cx="250" cy="160" r="3"/><circle cx="300" cy="120" r="3"/><circle cx="360" cy="150" r="3"/>
+            </g>
+            <rect x="1220" y="80" width="300" height="160" rx="6" fill="#f0fdf4" stroke="#dcfce7" stroke-width="1"/>
+            <g fill="#bbf0c8" opacity="0.55">
+              <circle cx="1270" cy="130" r="3"/><circle cx="1320" cy="160" r="3"/><circle cx="1370" cy="120" r="3"/>
+              <circle cx="1420" cy="170" r="3"/><circle cx="1470" cy="130" r="3"/>
+            </g>
+
+            <!-- Clean Light Road Network -->
+            <!-- Main Horizontal Avenue -->
+            <path d="M-50 220 L 1650 220" stroke="#ffffff" stroke-width="36" fill="none"/>
+            <path d="M-50 202 L 1650 202" stroke="#e2e8f0" stroke-width="1.5" fill="none"/>
+            <path d="M-50 238 L 1650 238" stroke="#e2e8f0" stroke-width="1.5" fill="none"/>
+            <path d="M-50 220 L 1650 220" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="12 12" fill="none"/>
+
+            <!-- West North-South Street -->
+            <path d="M 480 -50 L 480 1050" stroke="#ffffff" stroke-width="32" fill="none"/>
+            <path d="M 464 -50 L 464 1050" stroke="#e2e8f0" stroke-width="1.5" fill="none"/>
+            <path d="M 496 -50 L 496 1050" stroke="#e2e8f0" stroke-width="1.5" fill="none"/>
+
+            <!-- East North-South Street -->
+            <path d="M 1180 -50 L 1180 1050" stroke="#ffffff" stroke-width="32" fill="none"/>
+            <path d="M 1164 -50 L 1164 1050" stroke="#e2e8f0" stroke-width="1.5" fill="none"/>
+            <path d="M 1196 -50 L 1196 1050" stroke="#e2e8f0" stroke-width="1.5" fill="none"/>
+
+            <!-- Secondary Street -->
+            <path d="M-50 880 L 1650 880" stroke="#ffffff" stroke-width="26" fill="none"/>
+            <path d="M-50 867 L 1650 867" stroke="#e2e8f0" stroke-width="1.5" fill="none"/>
+            <path d="M-50 893 L 1650 893" stroke="#e2e8f0" stroke-width="1.5" fill="none"/>
+
+            <!-- City Blocks: many small building footprints, like a real vector map -->
+            <g fill="#ffffff" stroke="#e2e8f0" stroke-width="1">
+              <!-- Block A (top-left) -->
+              <rect x="95" y="290" width="105" height="80" rx="3"/>
+              <rect x="215" y="290" width="105" height="80" rx="3"/>
+              <rect x="335" y="290" width="70" height="80" rx="3"/>
+              <rect x="95" y="400" width="105" height="90" rx="3"/>
+              <rect x="215" y="400" width="105" height="90" rx="3"/>
+              <rect x="335" y="400" width="70" height="90" rx="3"/>
+
+              <!-- Block B (bottom-left, around the plaza) -->
+              <rect x="100" y="580" width="80" height="60" rx="3"/>
+              <rect x="260" y="580" width="80" height="60" rx="3"/>
+              <rect x="100" y="760" width="80" height="55" rx="3"/>
+              <rect x="260" y="760" width="80" height="55" rx="3"/>
+
+              <!-- Block C (right, residential) -->
+              <rect x="1255" y="295" width="110" height="90" rx="3"/>
+              <rect x="1390" y="295" width="110" height="90" rx="3"/>
+              <rect x="1255" y="410" width="110" height="90" rx="3"/>
+              <rect x="1390" y="410" width="110" height="90" rx="3"/>
+              <rect x="1255" y="525" width="110" height="90" rx="3"/>
+              <rect x="1390" y="525" width="110" height="90" rx="3"/>
+              <rect x="1255" y="640" width="110" height="90" rx="3"/>
+              <rect x="1390" y="640" width="110" height="90" rx="3"/>
+
+              <!-- A few scattered footprints framing the open center block -->
+              <rect x="560" y="300" width="90" height="70" rx="3"/>
+              <rect x="1010" y="300" width="90" height="70" rx="3"/>
+              <rect x="560" y="770" width="90" height="60" rx="3"/>
+              <rect x="1010" y="770" width="90" height="60" rx="3"/>
+            </g>
+
+            <!-- Small plaza / roundabout, a bit of real-map character -->
+            <circle cx="250" cy="695" r="42" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="1"/>
+            <circle cx="250" cy="695" r="15" fill="#dbeafe"/>
+
+            <g font-family="sans-serif" font-size="11" font-weight="600" fill="#a7b3c4" text-anchor="middle" letter-spacing="0.5">
+              <text x="250" y="255">DOWNTOWN</text>
+              <text x="1380" y="255">RESIDENTIAL</text>
+            </g>
+
+            <!-- Coordinate / Scale Marks -->
+            <g stroke="#cbd5e1" stroke-width="1">
+              <line x1="800" y1="20" x2="800" y2="40"/>
+              <line x1="800" y1="960" x2="800" y2="980"/>
+              <line x1="20" y1="500" x2="40" y2="500"/>
+              <line x1="1560" y1="500" x2="1580" y2="500"/>
+            </g>
+          </svg>
+
+          <iframe
+            class="map-svg google-map-frame svg-unfocused"
+            id="mapSvg"
+            title="Google Map"
+            src="https://www.google.com/maps?q=Mumbai%2C%20India&amp;z=13&amp;output=embed"
+            loading="eager"
+            referrerpolicy="no-referrer-when-downgrade"
+            allowfullscreen>
+          </iframe>
+
+          <!-- Black mask faded above the map (Soft dark veil) -->
+          <div class="map-faded-mask" id="mapFadedMask"></div>
+        </div>
+
+        <!-- SVG Layer for Drawing Boundary -->
+        <svg class="map-draw-layer" id="mapDrawLayer">
+          <polygon id="drawnPolygon" points="" fill="rgba(37, 99, 235, 0.15)" stroke="#2563eb" stroke-width="2.5" stroke-dasharray="6 4" style="display:none;" />
+          <path id="rubberbandPath" d="" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="4 4" fill="none" style="display:none;"/>
+          <g id="markersGroup"></g>
+        </svg>
+
+        <!-- Pin that "drops" onto the map once a location is chosen -->
+        <div class="arrival-pin" id="arrivalPin">
+          <i data-lucide="map-pin"></i>
+          <span class="pin-ring"></span>
+        </div>
+
+        <!-- Step 1a: One message, one action — nothing else to decide -->
+        <div class="simple-modal-backdrop" id="locationModal">
+          <div class="simple-card location-card">
+            <div class="location-icon-wrap reveal-item">
+              <div class="location-icon-circle">
+                <i data-lucide="map-pin"></i>
+              </div>
+            </div>
+
+            <h3 class="reveal-item">Let's find your site</h3>
+            <p class="reveal-item">Search its address to center the map.</p>
+
+            <button class="btn-main reveal-item" id="btnOpenLocationSearch" style="width:100%;">
+              <span>Search location</span>
+              <i data-lucide="arrow-right" style="width:16px;height:16px;"></i>
+            </button>
+
+          </div>
+        </div>
+
+        <!-- Step 1b: Location finder — a Maps-style search bar on the map itself -->
+        <div class="map-search-bar" id="mapSearchBar">
+          <div class="location-search-field" id="locationSearchField">
+            <i data-lucide="search" class="location-search-icon"></i>
+            <input type="text" id="locationInput" aria-label="Search address, city or landmark" placeholder="Search address, city or landmark…" autocomplete="off" />
+            <button type="button" class="location-go" id="btnLocationGo" aria-label="Go to location" disabled>
+              <i data-lucide="arrow-right"></i>
+            </button>
+            <span class="field-spinner" id="locationFieldSpinner"></span>
+          </div>
+
+          <div class="location-suggestions" id="locationSuggestions"></div>
+        </div>
+
+        <!-- Step 2: Prompt to mark the site boundary, shown after arrival -->
+        <div class="simple-modal-backdrop hidden" id="markupModal">
+          <div class="simple-card markup-card">
+            <div class="location-icon-wrap reveal-item">
+              <div class="location-icon-circle">
+                <i data-lucide="map-pin"></i>
+              </div>
+            </div>
+
+            <h3 class="reveal-item" id="markupModalTitle">You've arrived</h3>
+            <p class="reveal-item" id="markupModalSub">Now trace the outline of your project site directly on the map.</p>
+
+            <button class="btn-main reveal-item" id="btnModalStart" style="width:100%;">
+              <i data-lucide="pen-tool" style="width:16px;height:16px;"></i>
+              <span>Start Markup</span>
+            </button>
+
+          </div>
+        </div>
+
+        <!-- Step 3: Confirms the basic project setup is complete -->
+        <div class="simple-modal-backdrop hidden" id="setupCompleteModal">
+          <div class="simple-card complete-card">
+            <div class="celebration-icon-wrap reveal-item">
+              <div class="celebration-pulse-ring"></div>
+              <div class="celebration-circle">
+                <svg class="anim-check-svg" viewBox="0 0 24 24">
+                  <path d="M5 13l4 4L19 7"></path>
+                </svg>
+              </div>
+              <span class="confetti-dot" style="background:#f59e0b; top:-2px; left:6px; --tx:16px; --ty:-18px; animation-delay:.3s;"></span>
+              <span class="confetti-dot" style="background:#10b981; top:6px; right:-8px; --tx:18px; --ty:-4px; animation-delay:.38s;"></span>
+              <span class="confetti-dot" style="background:#2563eb; bottom:0; left:-10px; --tx:-16px; --ty:10px; animation-delay:.46s;"></span>
+              <span class="confetti-dot" style="background:#ef4444; bottom:-6px; right:6px; --tx:10px; --ty:16px; animation-delay:.54s;"></span>
+            </div>
+
+            <h3 class="reveal-item">Great work — your site is mapped</h3>
+
+            <div class="complete-meta reveal-item">
+              <span class="complete-meta-item">
+                <i data-lucide="ruler" class="complete-meta-icon"></i>
+                <span id="completeAreaValue">— m²</span>
+              </span>
+              <span class="complete-meta-divider">•</span>
+              <span class="complete-meta-item">
+                <i data-lucide="map-pin" class="complete-meta-icon"></i>
+                <span id="completeLocationValue">—</span>
+              </span>
+            </div>
+
+            <button class="btn-main reveal-item" id="btnCompleteContinue" style="width:100%;">
+              <span>Continue to Workspace</span>
+              <i data-lucide="arrow-right" style="width:16px;height:16px;"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Final step: setup is fully done — the project planner is ready -->
+        <div class="simple-modal-backdrop hidden" id="plannerReadyModal">
+          <div class="simple-card planner-card">
+            <button type="button" class="planner-close" id="btnPlannerClose" aria-label="Close">
+              <i data-lucide="x"></i>
+            </button>
+
+            <div class="gantt-illustration reveal-item">
+              <div class="gantt-today"><span class="gantt-today-dot"></span></div>
+
+              <div class="gantt-row">
+                <div class="gantt-track"></div>
+                <div class="gantt-bar gantt-bar-1"><span class="gantt-bar-highlight"></span></div>
+              </div>
+              <div class="gantt-row">
+                <div class="gantt-track"></div>
+                <div class="gantt-bar gantt-bar-2"><span class="gantt-bar-highlight"></span></div>
+              </div>
+              <div class="gantt-row gantt-row-3">
+                <div class="gantt-track"></div>
+                <div class="gantt-bar gantt-bar-3"><span class="gantt-bar-highlight"></span></div>
+                <span class="gantt-check"><i data-lucide="check"></i></span>
+              </div>
+            </div>
+
+            <div class="planner-eyebrow reveal-item">Project Planner</div>
+            <h3 class="reveal-item">All set — your planner's ready</h3>
+            <p class="reveal-item">We've turned your project setup into a live plan.</p>
+
+            <button class="btn-main reveal-item" id="btnExplorePlanning" style="width:100%;">
+              <span>Explore planning</span>
+              <i data-lucide="arrow-right" style="width:16px;height:16px;"></i>
+            </button>
+
+            <button type="button" class="location-skip reveal-item" id="btnPlannerSkip">I'll do it later</button>
+          </div>
+        </div>
+
+        <!-- Simple Floating Toolbar -->
+        <div class="map-tools hidden-until-located" id="mapTools">
+          <button class="m-btn active" data-tool="pan" id="toolPan" title="Pan Map">
+            <i data-lucide="hand"></i>
+            <span>Pan</span>
+          </button>
+          <div class="tool-sep"></div>
+          <button class="m-btn" data-tool="polygon" id="toolPolygon" title="Draw Polygon">
+            <i data-lucide="pentagon"></i>
+            <span>Polygon</span>
+          </button>
+          <button class="m-btn" data-tool="rectangle" id="toolRect" title="Draw Rectangle">
+            <i data-lucide="square"></i>
+            <span>Rectangle</span>
+          </button>
+          <div class="tool-sep"></div>
+          <button class="m-btn" id="toolClear" title="Clear Boundary">
+            <i data-lucide="trash-2"></i>
+            <span>Clear</span>
+          </button>
+        </div>
+
+        <!-- Minimal Stats Chip -->
+        <div class="stats-chip hidden-until-located" id="statsChip">
+          <span class="stats-label" id="statsLabel">Site Area</span>
+          <span class="stats-value" id="statsValue">— m²</span>
+        </div>
+
+        <!-- Zoom Controls -->
+        <div class="map-zoom hidden-until-located" id="mapZoom">
+          <button class="z-btn" id="btnZoomIn" title="Zoom In"><i data-lucide="plus"></i></button>
+          <button class="z-btn" id="btnZoomOut" title="Zoom Out"><i data-lucide="minus"></i></button>
+          <button class="z-btn" id="btnZoomReset" title="Reset View"><i data-lucide="maximize-2"></i></button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- =========================================
+         TAB 2: 2D SETUP
+         ========================================= -->
+    <div class="tab-pane" id="tab2D">
+      <!-- 2D Viewer — shows the sample blueprint, or the uploaded drawing
+           when the project came from Quick Setup's 2D upload. The Layer
+           Hierarchy sidebar (left icon rail) has the real sheet/zone tree;
+           clicking the drawing opens it and highlights this file. -->
+      <div class="viewer-2d">
+        <img class="drawing-sheet-image" id="drawingSheetImage" alt="Uploaded drawing" title="Click to view in Layer Hierarchy" />
+        <svg class="drawing-sheet" id="drawingSheetSvg" viewBox="0 0 900 580" xmlns="http://www.w3.org/2000/svg">
+          <!-- Frame -->
+          <rect x="20" y="20" width="860" height="540" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+          <rect x="28" y="28" width="844" height="524" fill="none" stroke="#f1f5f9" stroke-width="1"/>
+
+          <!-- Grid axes -->
+          <g stroke="#e2e8f0" stroke-width="1" stroke-dasharray="6 6">
+            <line x1="140" y1="50" x2="140" y2="510"/>
+            <line x1="380" y1="50" x2="380" y2="510"/>
+            <line x1="620" y1="50" x2="620" y2="510"/>
+            <line x1="760" y1="50" x2="760" y2="510"/>
+            <line x1="60" y1="160" x2="820" y2="160"/>
+            <line x1="60" y1="340" x2="820" y2="340"/>
+            <line x1="60" y1="480" x2="820" y2="480"/>
+          </g>
+
+          <!-- Outer Walls -->
+          <polygon points="140,160 760,160 760,480 140,480" fill="none" stroke="#1e293b" stroke-width="3"/>
+
+          <!-- Columns -->
+          <g fill="#2563eb">
+            <rect x="133" y="153" width="14" height="14" rx="2"/>
+            <rect x="373" y="153" width="14" height="14" rx="2"/>
+            <rect x="613" y="153" width="14" height="14" rx="2"/>
+            <rect x="753" y="153" width="14" height="14" rx="2"/>
+            <rect x="133" y="333" width="14" height="14" rx="2"/>
+            <rect x="373" y="333" width="14" height="14" rx="2"/>
+            <rect x="613" y="333" width="14" height="14" rx="2"/>
+            <rect x="753" y="333" width="14" height="14" rx="2"/>
+            <rect x="133" y="473" width="14" height="14" rx="2"/>
+            <rect x="373" y="473" width="14" height="14" rx="2"/>
+            <rect x="613" y="473" width="14" height="14" rx="2"/>
+            <rect x="753" y="473" width="14" height="14" rx="2"/>
+          </g>
+
+          <!-- Core Elevator & Stairs -->
+          <rect x="420" y="240" width="160" height="140" fill="#f8fafc" stroke="#334155" stroke-width="2"/>
+          <line x1="500" y1="240" x2="500" y2="380" stroke="#e2e8f0" stroke-width="1.5"/>
+          <text x="460" y="315" font-family="sans-serif" font-size="11" font-weight="600" fill="#64748b" text-anchor="middle">LIFT 01</text>
+          <text x="540" y="315" font-family="sans-serif" font-size="11" font-weight="600" fill="#64748b" text-anchor="middle">LIFT 02</text>
+
+          <!-- Rooms -->
+          <text x="260" y="240" font-family="sans-serif" font-size="13" font-weight="700" fill="#0f172a">MAIN LOBBY</text>
+          <text x="260" y="258" font-family="sans-serif" font-size="11" fill="#64748b">120 m²</text>
+
+          <text x="680" y="240" font-family="sans-serif" font-size="13" font-weight="700" fill="#0f172a">OFFICE A</text>
+          <text x="680" y="258" font-family="sans-serif" font-size="11" fill="#64748b">84 m²</text>
+
+          <!-- Title Block -->
+          <g transform="translate(630, 485)">
+            <rect x="0" y="0" width="220" height="50" fill="#ffffff" stroke="#e2e8f0"/>
+            <text x="10" y="18" font-family="sans-serif" font-size="10" font-weight="700" fill="#0f172a">SHEET A-101-G (GROUND)</text>
+            <text x="10" y="34" font-family="sans-serif" font-size="9" fill="#94a3b8">SCALE 1:100 • REV 03</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+
+    <!-- =========================================
+         TAB 3: 3D SETUP
+         ========================================= -->
+    <div class="tab-pane" id="tab3D">
+      <!-- 3D WebGL Canvas Area — clicking it opens the Layer Hierarchy sidebar
+           and highlights the uploaded 3D file, if there is one. -->
+      <div class="three-d-view" id="threeDViewWrap" style="flex:1; position:relative; background:#f8fafc;" title="Click to view in Layer Hierarchy">
+        <div id="threeDContainer"></div>
+        <div class="view-overlay-3d">
+          <strong id="threeDOverlayTitle">BIM 3D Model</strong> <span id="threeDOverlaySub">• 12 Floors • Architectural & Structural</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Drone, Walkthrough, Split View & Coordination — placeholder views -->
+    <div class="tab-pane" id="tabDrone">
+      <div class="view-placeholder">
+        <div class="view-placeholder-icon"><i data-lucide="plane"></i></div>
+        <h3>Drone View</h3>
+        <p>Aerial capture and drone flight paths for this site will appear here.</p>
+      </div>
+    </div>
+
+    <div class="tab-pane" id="tabWalkthrough">
+      <div class="view-placeholder">
+        <div class="view-placeholder-icon"><i data-lucide="footprints"></i></div>
+        <h3>Walkthrough</h3>
+        <p>A first-person walkthrough of the model will appear here.</p>
+      </div>
+    </div>
+
+    <div class="tab-pane" id="tabSplit">
+      <div class="view-placeholder">
+        <div class="view-placeholder-icon"><i data-lucide="columns-2"></i></div>
+        <h3>Split View</h3>
+        <p>Compare two views side by side — for example, 2D drawings against the 3D model.</p>
+      </div>
+    </div>
+
+    <div class="tab-pane" id="tabCoordination">
+      <div class="view-placeholder">
+        <div class="view-placeholder-icon"><i data-lucide="network"></i></div>
+        <h3>BIM Coordination</h3>
+        <p>Clash detection and cross-discipline coordination will appear here.</p>
+      </div>
+    </div>
+
+    <!-- Shown whenever a view needs setup: no hierarchy, no uploaded file.
+         Works from any tab (Map included) — not scoped to #mapContainer. -->
+    <div class="simple-modal-backdrop hidden" id="setupChoiceModal">
+      <div class="simple-card setup-choice-card">
+        <div class="location-icon-wrap reveal-item">
+          <div class="location-pulse-ring"></div>
+          <div class="location-icon-circle">
+            <i data-lucide="layout-template"></i>
+          </div>
+        </div>
+
+        <h3 class="reveal-item">Set up this project</h3>
+        <p class="reveal-item">Choose how you'd like to get started.</p>
+
+        <div class="setup-choice-options reveal-item" id="setupChoiceOptions">
+          <button type="button" class="setup-choice-option" id="btnChooseHierarchy">
+            <div class="setup-choice-icon"><i data-lucide="layers-3"></i></div>
+            <div class="setup-choice-text">
+              <strong>Create hierarchy</strong>
+              <span>Set up zones, levels and services.</span>
+            </div>
+            <i data-lucide="arrow-right" class="setup-choice-arrow"></i>
+          </button>
+
+          <button type="button" class="setup-choice-option" id="btnChooseUpload">
+            <div class="setup-choice-icon"><i data-lucide="upload-cloud"></i></div>
+            <div class="setup-choice-text">
+              <strong>Upload a drawing</strong>
+              <span>Add a 2D drawing or 3D model directly.</span>
+            </div>
+            <i data-lucide="arrow-right" class="setup-choice-arrow"></i>
+          </button>
+        </div>
+
+        <button type="button" class="location-skip reveal-item" id="btnSetupChoiceClose">Not now</button>
+      </div>
+    </div>
+
+    <!-- Shown once per view (2D, 3D, Drone, Walkthrough, Split, Coordination)
+         the first time the user visits it after it's actually ready — same
+         look and feel as the Project Planner modal. -->
+    <div class="simple-modal-backdrop hidden" id="viewWelcomeModal">
+      <div class="simple-card">
+        <div class="celebration-icon-wrap reveal-item">
+          <div class="celebration-pulse-ring"></div>
+          <div class="celebration-circle">
+            <i data-lucide="file-text" style="width:24px;height:24px;color:#fff;"></i>
+          </div>
+        </div>
+
+        <div class="planner-eyebrow reveal-item" id="viewWelcomeEyebrow">2D Drawings</div>
+        <h3 class="reveal-item" id="viewWelcomeTitle">Welcome to your 2D viewer</h3>
+        <p class="reveal-item" id="viewWelcomeSub">Pan, zoom and click into any drawing to explore it.</p>
+
+        <button class="btn-main reveal-item" id="btnViewWelcomeClose" style="width:100%;">
+          <span>Got it</span>
+          <i data-lucide="arrow-right" style="width:16px;height:16px;"></i>
+        </button>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Layer Hierarchy Sidebar: Site Boundary → Zone → Level → Service
+       (or the uploaded file, if Quick Setup was used instead) -->
+  <aside class="side-drawer" id="hierarchyDrawer">
+    <div class="drawer-head">
+      <div>
+        <div class="drawer-eyebrow">Structure</div>
+        <h3>Layer Hierarchy</h3>
+      </div>
+
+      <div class="drawer-header-tools" id="hierarchyHeaderTools">
+        <button type="button" class="drawer-tool-btn drawer-tool-collapse" id="btnCloseHierarchyDrawer" aria-label="Close layer hierarchy" title="Close">
+          <i data-lucide="panel-left-close"></i>
+        </button>
+        <button type="button" class="drawer-tool-btn drawer-tool-search" id="btnHierarchySearch" aria-label="Search hierarchy" title="Search">
+          <i data-lucide="search"></i>
+        </button>
+        <button type="button" class="drawer-tool-btn drawer-tool-plus" id="btnHierarchyAdd" aria-label="Add" title="Add">
+          <i data-lucide="plus"></i>
+        </button>
+
+        <div class="mini-popover" id="hierarchyAddPopover" hidden>
+          <button type="button" class="mini-popover-item" id="popoverCreateHierarchy">
+            <i data-lucide="layers-3"></i>
+            <span class="mini-popover-item-text">
+              <span id="popoverCreateHierarchyLabel">Create hierarchy</span>
+              <small id="popoverCreateHierarchyHint" hidden>Discard current zones to start over</small>
+            </span>
+          </button>
+          <button type="button" class="mini-popover-item" id="popoverQuickSetup">
+            <i data-lucide="upload-cloud"></i><span>Quick setup</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="drawer-search-bar" id="hierarchySearchBar" hidden>
+      <i data-lucide="search"></i>
+      <input type="text" id="hierarchySearchInput" placeholder="Search hierarchy…" />
+      <button type="button" id="btnHierarchySearchClose" aria-label="Close search"><i data-lucide="x"></i></button>
+    </div>
+
+    <div class="drawer-tree" id="hierarchyTree"></div>
+
+    <div class="drawer-sticky-footer" id="hierarchyStickyFooter" hidden></div>
+  </aside>
+
+  <!-- Project Planner Drawer -->
+  <aside class="side-drawer" id="plannerDrawer">
+    <div class="drawer-head">
+      <div>
+        <div class="drawer-eyebrow" id="plannerDrawerType">Construction</div>
+        <h3>Project Planner</h3>
+      </div>
+      <button class="drawer-close" id="btnClosePlannerDrawer" aria-label="Close planner">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+
+    <div class="drawer-toolbar">
+      <button type="button" class="drawer-add-root" id="btnAddPhase">
+        <i data-lucide="plus"></i>
+        <span>Add phase</span>
+      </button>
+    </div>
+
+    <div class="drawer-tree" id="plannerTree"></div>
+  </aside>
+
+  <!-- Global Toast -->
+  <div class="toast-msg" id="toastMsg">Notification</div>
+
+  <!-- Scripts -->
+  <script>
+    lucide.createIcons();
+
+    // Project name & type from query params (set by the setup wizard)
+    const urlParams = new URLSearchParams(window.location.search);
+    const projParam = urlParams.get("project");
+    const projectType = urlParams.get("type") || "Construction";
+    if (projParam) {
+      document.title = `${projParam} — Workspace`;
+    }
+
+    /* =========================================
+       PROJECT SWITCHER
+       "Create a project" hands off to the wizard's project-type step
+       directly — an existing user adding another project doesn't need
+       the intro screen again.
+       ========================================= */
+    (function initProjectSwitcher() {
+      const DUMMY_PROJECTS = [
+        { name: "Riverside Mall Renovation", color: "#8b5cf6" },
+        { name: "GreenPark Residences", color: "#0ea5a4" },
+        { name: "Metro Transit Hub", color: "#f59e0b" },
+        { name: "Oakwood Business Center", color: "#2563eb" }
+      ];
+
+      const currentName = projParam || "Untitled Project";
+      const nameEl = document.getElementById("projectSwitcherName");
+      const currentNameEl = document.getElementById("projectSwitcherCurrentName");
+      if (nameEl) nameEl.textContent = currentName;
+      if (currentNameEl) currentNameEl.textContent = currentName;
+
+      const trigger = document.getElementById("projectSwitcherTrigger");
+      const panel = document.getElementById("projectSwitcherPanel");
+      const list = document.getElementById("projectSwitcherList");
+      if (!trigger || !panel || !list) return;
+
+      function renderProjectList() {
+        list.innerHTML = "";
+        const liveName = document.getElementById("projectSwitcherName").textContent;
+        const items = [{ name: liveName, color: "#2563eb", current: true }, ...DUMMY_PROJECTS];
+
+        items.forEach(item => {
+          const row = document.createElement("button");
+          row.type = "button";
+          row.className = "project-switcher-item" + (item.current ? " current" : "");
+          const initial = (item.name || "?").trim().charAt(0).toUpperCase() || "?";
+          row.innerHTML = `
+            <span class="project-switcher-avatar" style="background:${item.color}">${initial}</span>
+            <span class="project-switcher-item-name">${item.name}</span>
+            ${item.current ? '<i data-lucide="check" class="project-switcher-check"></i>' : ""}
+          `;
+          row.addEventListener("click", () => {
+            closePanel();
+            if (item.current) return;
+            showToast("Switching projects isn't wired up in this demo yet");
+          });
+          list.appendChild(row);
+        });
+
+        if (window.lucide) lucide.createIcons();
+      }
+
+      function isPanelOpen() { return panel.classList.contains("open"); }
+
+      function openPanel() {
+        // Nothing else should be open at the same time as this.
+        if (typeof closeHierarchyDrawer === "function") closeHierarchyDrawer();
+        if (typeof closePlannerDrawer === "function") closePlannerDrawer();
+        document.querySelectorAll(".simple-modal-backdrop").forEach(m => {
+          if (typeof hasGsap !== "undefined" && hasGsap) gsap.killTweensOf(m);
+          m.classList.add("hidden");
+        });
+        renderProjectList();
+        panel.classList.add("open");
+        trigger.classList.add("open");
+      }
+
+      function closePanel() {
+        panel.classList.remove("open");
+        trigger.classList.remove("open");
+      }
+
+      trigger.addEventListener("click", e => {
+        e.stopPropagation();
+        if (isPanelOpen()) closePanel(); else openPanel();
+      });
+
+      document.getElementById("btnProjectSwitcherToggle").addEventListener("click", closePanel);
+
+      document.addEventListener("click", e => {
+        if (isPanelOpen() && !e.target.closest("#projectSwitcher")) closePanel();
+      });
+
+      function goToNewProjectWizard() {
+        window.location.href = "construction_bim_workspace_setup_final.html?resume=projectType";
+      }
+
+      document.getElementById("btnCreateProject").addEventListener("click", goToNewProjectWizard);
+      document.getElementById("btnProjectSwitcherAdd").addEventListener("click", goToNewProjectWizard);
+
+      document.getElementById("btnBrowseAllProjects").addEventListener("click", () => {
+        showToast("Browsing all projects isn't wired up in this demo yet");
+      });
+
+      document.getElementById("btnProjectSwitcherInvite").addEventListener("click", e => {
+        e.stopPropagation();
+        showToast("Invite link copied (demo)");
+      });
+
+      document.getElementById("btnProjectSwitcherRename").addEventListener("click", e => {
+        e.stopPropagation();
+        const span = document.getElementById("projectSwitcherName");
+        const current = span.textContent;
+        const input = document.createElement("input");
+        input.type = "text";
+        input.value = current;
+        input.className = "project-switcher-rename-input";
+        span.replaceWith(input);
+        input.focus();
+        input.select();
+
+        let settled = false;
+        function commit() {
+          if (settled) return;
+          settled = true;
+          const value = input.value.trim() || current;
+          const newSpan = document.createElement("span");
+          newSpan.id = "projectSwitcherName";
+          newSpan.textContent = value;
+          input.replaceWith(newSpan);
+          document.title = `${value} — Workspace`;
+          const currentEl = document.getElementById("projectSwitcherCurrentName");
+          if (currentEl) currentEl.textContent = value;
+        }
+        input.addEventListener("keydown", ev => {
+          if (ev.key === "Enter") commit();
+          if (ev.key === "Escape") commit();
+        });
+        input.addEventListener("blur", commit);
+      });
+
+      document.querySelectorAll(".project-switcher-tab").forEach(tab => {
+        tab.addEventListener("click", () => {
+          document.querySelectorAll(".project-switcher-tab").forEach(t => t.classList.remove("active"));
+          tab.classList.add("active");
+          if (tab.dataset.tab === "shared") {
+            list.innerHTML = "";
+            const empty = document.createElement("div");
+            empty.className = "drawer-empty-hint";
+            empty.textContent = "Nothing shared with you yet.";
+            list.appendChild(empty);
+          } else {
+            renderProjectList();
+          }
+        });
+      });
+    })();
+
+    // The full setup payload (zones/levels/services, and/or an uploaded 2D
+    // / 3D file) handed off by the wizard via localStorage.
+    function readSetupPayload() {
+      try {
+        const raw = localStorage.getItem("cf_workspace_setup");
+        return raw ? JSON.parse(raw) : null;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    const setupPayload = readSetupPayload() || {};
+
+    // Migrate a payload saved under an older schema — either the very first
+    // one (a single uploadedFileName/uploadedFileDataUrl pair) or the
+    // in-between one (one file object per type) — into the current shape:
+    // files[type] is always an array, since a project can carry as many 2D
+    // drawings and 3D models as the user adds over time.
+    let fileIdCounter = 0;
+    function nextFileId() { return "f" + Date.now().toString(36) + (fileIdCounter++); }
+    function toFileArray(value) {
+      if (Array.isArray(value)) return value.map(f => ({ id: f.id || nextFileId(), name: f.name, dataUrl: f.dataUrl || null }));
+      if (value) return [{ id: value.id || nextFileId(), name: value.name, dataUrl: value.dataUrl || null }];
+      return [];
+    }
+
+    if (!setupPayload.files && setupPayload.uploadedFileName) {
+      setupPayload.files = {
+        [setupPayload.uploadType || "2D Drawing"]: [{
+          name: setupPayload.uploadedFileName,
+          dataUrl: setupPayload.uploadedFileDataUrl || null
+        }]
+      };
+    }
+
+    // Live workspace state — seeded from the payload above. Renaming or
+    // deleting a file (from the Layer Hierarchy sidebar) mutates this
+    // directly and re-persists, without a page reload.
+    const liveFiles = {
+      "2D Drawing": toFileArray(setupPayload.files && setupPayload.files["2D Drawing"]),
+      "3D BIM Model": toFileArray(setupPayload.files && setupPayload.files["3D BIM Model"])
+    };
+    let liveHasHierarchy = Array.isArray(setupPayload.zones) && setupPayload.zones.length > 0;
+
+    // Which file of each type is currently showing in its viewer — defaults
+    // to the most recently added one.
+    let active2DFileId = liveFiles["2D Drawing"].length ? liveFiles["2D Drawing"][liveFiles["2D Drawing"].length - 1].id : null;
+    let active3DFileId = liveFiles["3D BIM Model"].length ? liveFiles["3D BIM Model"][liveFiles["3D BIM Model"].length - 1].id : null;
+
+    function get2DFiles() { return liveFiles["2D Drawing"]; }
+    function get3DFiles() { return liveFiles["3D BIM Model"]; }
+    function getActive2DFile() { return get2DFiles().find(f => f.id === active2DFileId) || get2DFiles()[get2DFiles().length - 1] || null; }
+    function getActive3DFile() { return get3DFiles().find(f => f.id === active3DFileId) || get3DFiles()[get3DFiles().length - 1] || null; }
+
+    // Presence, not previewability — a real-world 2D upload is often a PDF
+    // or DWG with no image preview, and it should still count as "there"
+    // for gating/hierarchy purposes. applyDrawingSheetImage() is what
+    // decides whether an actual preview can be shown.
+    function has2DFile() { return get2DFiles().length > 0; }
+    function has3DFile() { return get3DFiles().length > 0; }
+    function hasAnySetup() { return liveHasHierarchy || has2DFile() || has3DFile(); }
+
+    function persistLiveSetup() {
+      setupPayload.files = liveFiles;
+      try {
+        localStorage.setItem("cf_workspace_setup", JSON.stringify(setupPayload));
+      } catch (e) {
+        // Quota or storage unavailable — the change still applies for this
+        // session, it just won't survive a reload.
+      }
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById("toastMsg");
+      toast.textContent = msg;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 2800);
+    }
+
+    /* =========================================
+       Modal open/close — GSAP-driven so the entrance
+       replays every time a modal is shown, not just once
+       on first page load. Falls back to a plain toggle
+       if GSAP didn't load.
+       ========================================= */
+    const hasGsap = typeof gsap !== "undefined";
+
+    // Some icon details (checkmark draw, confetti burst, circle pop) use one-shot
+    // CSS keyframes that only ever play on first paint. Restart them so they fire
+    // again every time their modal opens, not just once on page load.
+    function restartCssAnimations(card) {
+      const els = card.querySelectorAll(".celebration-circle, .confetti-dot, .anim-check-svg path, .gantt-bar, .gantt-check");
+      if (!els.length) return;
+      els.forEach(el => { el.style.animation = "none"; });
+      void card.offsetWidth;
+      els.forEach(el => { el.style.animation = ""; });
+    }
+
+    function openModal(modal) {
+      if (!modal) return;
+
+      // Only one modal (and no drawer) is ever open at a time — opening a
+      // new one always closes whatever else was showing, instantly (no
+      // animation) so there's never a stacked pair mid-transition.
+      if (typeof closeHierarchyDrawer === "function") closeHierarchyDrawer();
+      if (typeof closePlannerDrawer === "function") closePlannerDrawer();
+      document.querySelectorAll(".simple-modal-backdrop").forEach(other => {
+        if (other === modal || other.classList.contains("hidden")) return;
+        other.classList.add("hidden");
+        if (hasGsap) gsap.killTweensOf(other);
+      });
+
+      const card = modal.querySelector(".simple-card");
+      modal.classList.remove("hidden");
+      if (card) restartCssAnimations(card);
+
+      if (!hasGsap || !card) {
+        if (card) card.querySelectorAll(".reveal-item").forEach(el => { el.style.opacity = "1"; });
+        return;
+      }
+
+      gsap.killTweensOf([modal, card, ...card.querySelectorAll(".reveal-item")]);
+
+      gsap.fromTo(modal, { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "power2.out" });
+      gsap.fromTo(card,
+        { opacity: 0, y: 18, scale: 0.96 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.42, ease: "back.out(1.6)" }
+      );
+      gsap.fromTo(card.querySelectorAll(".reveal-item"),
+        { opacity: 0, y: 10 },
+        { opacity: 1, y: 0, duration: 0.36, stagger: 0.07, delay: 0.1, ease: "power2.out" }
+      );
+    }
+
+    function closeModal(modal) {
+      if (!modal) return;
+      const card = modal.querySelector(".simple-card");
+
+      if (!hasGsap || !card) {
+        modal.classList.add("hidden");
+        return;
+      }
+
+      gsap.killTweensOf([modal, card]);
+      gsap.to(card, { opacity: 0, y: 8, scale: 0.97, duration: 0.16, ease: "power1.in" });
+      gsap.to(modal, {
+        opacity: 0,
+        duration: 0.2,
+        ease: "power1.in",
+        delay: 0.02,
+        onComplete: () => modal.classList.add("hidden")
+      });
+    }
+
+    /* Tab Switching — every view stays gated until the project has SOME
+       setup: a hierarchy, or an uploaded 2D/3D file. 2D and 3D each also
+       unlock on their own the moment their matching file is uploaded. */
+    const tabButtons = document.querySelectorAll(".tab-item");
+    const tabPanes = document.querySelectorAll(".tab-pane");
+    const GATABLE_TAB_TARGETS = ["tabMap", "tab2D", "tab3D", "tabDrone", "tabWalkthrough", "tabSplit", "tabCoordination"];
+
+    function isTabReady(target) {
+      // 2D and 3D each unlock on their own the moment their matching file
+      // is uploaded — a Quick Setup upload is about that one view.
+      if (target === "tab2D") return has2DFile() || liveHasHierarchy;
+      if (target === "tab3D") return has3DFile() || liveHasHierarchy;
+      // Everything else (Map, Drone, Walkthrough, Split, Coordination) is
+      // project-wide and needs the real hierarchy — a single quick-uploaded
+      // file isn't enough to unlock these, so they keep offering the
+      // "create hierarchy or upload" choice until one exists.
+      return liveHasHierarchy;
+    }
+
+    function updateTabLocks() {
+      GATABLE_TAB_TARGETS.forEach(id => {
+        const ready = isTabReady(id);
+        const pane = document.getElementById(id);
+        if (ready && pane) pane.classList.remove("setup-pending");
+
+        const btn = document.querySelector(`.tab-item[data-target="${id}"]`);
+        if (!btn) return;
+        btn.classList.remove("locked");
+        btn.title = ready ? "" : "Set up this project first";
+        const icon = btn.querySelector("i");
+        if (icon && btn.dataset.icon) icon.setAttribute("data-lucide", btn.dataset.icon);
+      });
+
+      const railPlanner = document.getElementById("railPlanner");
+      if (railPlanner) {
+        const unlocked = hasAnySetup();
+        railPlanner.disabled = !unlocked;
+        railPlanner.title = unlocked ? "Project Planner" : "Set up this project first";
+        if (!unlocked) closePlannerDrawer();
+      }
+
+      refreshIcons();
+    }
+
+    function switchToTab(target) {
+      tabButtons.forEach(b => b.classList.remove("active"));
+      tabPanes.forEach(p => p.classList.remove("active"));
+
+      const activeButton = document.querySelector(`.tab-item[data-target="${target}"]`);
+      const activePane = document.getElementById(target);
+      if (activeButton) activeButton.classList.add("active");
+      if (activePane) activePane.classList.add("active");
+
+      if (target === "tab3D" && isTabReady("tab3D") && window.onThreeResize) {
+        setTimeout(window.onThreeResize, 40);
+      }
+    }
+
+    tabButtons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        const target = btn.dataset.target;
+
+        switchToTab(target);
+
+        if (!isTabReady(target)) {
+          document.getElementById(target).classList.add("setup-pending");
+          openSetupChoiceModal(target);
+          return;
+        }
+
+        maybeShowViewWelcome(target);
+      });
+    });
+
+    /* =========================================
+       VIEW WELCOME MODAL
+       One modal, reused for every view — shown the first time this
+       session that a now-ready tab is actually visited.
+       ========================================= */
+    const VIEW_WELCOME_CONTENT = {
+      tab2D: { icon: "file-text", eyebrow: "2D Drawings", title: "Welcome to your 2D viewer", sub: "Pan, zoom and click into any drawing to explore it." },
+      tab3D: { icon: "box", eyebrow: "3D Model", title: "Welcome to your 3D viewer", sub: "Orbit, pan and zoom through your federated model." },
+      tabDrone: { icon: "plane", eyebrow: "Drone View", title: "Welcome to Drone View", sub: "Aerial capture and flight paths for this site will appear here." },
+      tabWalkthrough: { icon: "footprints", eyebrow: "Walkthrough", title: "Welcome to Walkthrough", sub: "Take a first-person tour through your model." },
+      tabSplit: { icon: "columns-2", eyebrow: "Split View", title: "Welcome to Split View", sub: "Compare two views side by side — like 2D drawings against the 3D model." },
+      tabCoordination: { icon: "network", eyebrow: "BIM Coordination", title: "Welcome to BIM Coordination", sub: "Run clash detection across disciplines." }
+    };
+
+    const viewsWelcomedThisSession = new Set();
+
+    function maybeShowViewWelcome(target) {
+      const content = VIEW_WELCOME_CONTENT[target];
+      if (!content || viewsWelcomedThisSession.has(target)) return;
+      viewsWelcomedThisSession.add(target);
+
+      const circle = document.querySelector("#viewWelcomeModal .celebration-circle");
+      if (circle) circle.innerHTML = `<i data-lucide="${content.icon}" style="width:24px;height:24px;color:#fff;"></i>`;
+      document.getElementById("viewWelcomeEyebrow").textContent = content.eyebrow;
+      document.getElementById("viewWelcomeTitle").textContent = content.title;
+      document.getElementById("viewWelcomeSub").textContent = content.sub;
+      refreshIcons();
+
+      setTimeout(() => openModal(document.getElementById("viewWelcomeModal")), 250);
+    }
+
+    document.getElementById("btnViewWelcomeClose").addEventListener("click", () => {
+      closeModal(document.getElementById("viewWelcomeModal"));
+    });
+
+    /* Popup & Tool Selection */
+    const markupModal = document.getElementById("markupModal");
+    const markupModalTitle = document.getElementById("markupModalTitle");
+    const markupModalSub = document.getElementById("markupModalSub");
+    const btnModalStart = document.getElementById("btnModalStart");
+    const mapContainer = document.getElementById("mapContainer");
+    const mapDrawLayer = document.getElementById("mapDrawLayer");
+    const drawnPolygon = document.getElementById("drawnPolygon");
+    const rubberbandPath = document.getElementById("rubberbandPath");
+    const markersGroup = document.getElementById("markersGroup");
+    const statsValue = document.getElementById("statsValue");
+    const statsLabel = document.getElementById("statsLabel");
+    const mapFadedMask = document.getElementById("mapFadedMask");
+    const mapSvg = document.getElementById("mapSvg");
+    const arrivalPin = document.getElementById("arrivalPin");
+    const mapTools = document.getElementById("mapTools");
+    const mapZoom = document.getElementById("mapZoom");
+    const statsChip = document.getElementById("statsChip");
+
+    const workspaceState = {
+      locationConfirmed: false,
+      selectedLocation: null,
+      boundarySaved: false
+    };
+
+    let selectedTool = "polygon"; // default to polygon tool
+    let points = [];
+    let isDrawing = false;
+
+    const workspaceContent = document.querySelector(".workspace-content");
+    workspaceContent.appendChild(markupModal);
+    workspaceContent.appendChild(document.getElementById("setupCompleteModal"));
+    workspaceContent.appendChild(document.getElementById("plannerReadyModal"));
+
+    btnModalStart.addEventListener("click", () => {
+      closeModal(markupModal);
+      switchToTab("tabMap");
+      if (!workspaceState.locationConfirmed) {
+        setTimeout(() => openModal(locationModal), 220);
+      } else {
+        mapTools.classList.remove("collapsed");
+        activateTool("polygon");
+        mapSearchBar.classList.add("show");
+      }
+    });
+
+
+    /* =========================================
+       STEP 1: LOCATION FINDER
+       One decision at a time: message → search bar → pick a result.
+       ========================================= */
+    const dummyLocations = [
+      { name: "Bandra Kurla Complex", sub: "Mumbai, Maharashtra, India" },
+      { name: "Downtown Dubai", sub: "Dubai, United Arab Emirates" },
+      { name: "Midtown Manhattan", sub: "New York, NY, USA" },
+      { name: "Canary Wharf", sub: "London, United Kingdom" },
+      { name: "Marina Bay", sub: "Singapore" },
+      { name: "West Loop", sub: "Chicago, IL, USA" },
+      { name: "Central Business District", sub: "Sydney, NSW, Australia" },
+      { name: "Gachibowli", sub: "Hyderabad, Telangana, India" }
+    ];
+
+    const locationModal = document.getElementById("locationModal");
+    const btnOpenLocationSearch = document.getElementById("btnOpenLocationSearch");
+    const mapSearchBar = document.getElementById("mapSearchBar");
+    const locationSearchField = document.getElementById("locationSearchField");
+    const locationInput = document.getElementById("locationInput");
+    const btnLocationGo = document.getElementById("btnLocationGo");
+    const locationSuggestions = document.getElementById("locationSuggestions");
+
+    function refreshIcons() {
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function renderSuggestions(list, query) {
+      locationSuggestions.innerHTML = "";
+
+      if (!list.length) {
+        const item = document.createElement("div");
+        item.className = "location-suggestion-item";
+        item.innerHTML = `<i data-lucide="map-pin"></i>
+          <div><div class="location-suggestion-name">Search for "${query}"</div>
+          <div class="location-suggestion-sub">Use as a custom location</div></div>`;
+        item.addEventListener("click", () => confirmLocation({ name: query, sub: "Custom location" }));
+        locationSuggestions.appendChild(item);
+      } else {
+        list.forEach(loc => {
+          const item = document.createElement("div");
+          item.className = "location-suggestion-item";
+          item.innerHTML = `<i data-lucide="map-pin"></i>
+            <div><div class="location-suggestion-name">${loc.name}</div>
+            <div class="location-suggestion-sub">${loc.sub}</div></div>`;
+          item.addEventListener("click", () => confirmLocation(loc));
+          locationSuggestions.appendChild(item);
+        });
+      }
+
+      locationSuggestions.classList.add("show");
+      refreshIcons();
+    }
+
+    // Step 1a → 1b: swap the message card for the map's own search bar
+    btnOpenLocationSearch.addEventListener("click", () => {
+      closeModal(locationModal);
+      mapSvg.classList.remove("svg-unfocused");
+      mapFadedMask.style.opacity = "0";
+      mapSearchBar.classList.add("show");
+      setTimeout(() => {
+        locationInput.focus();
+      }, 260);
+    });
+
+    locationInput.addEventListener("input", () => {
+      const query = locationInput.value.trim();
+      btnLocationGo.disabled = !query;
+
+      if (!query) {
+        locationSuggestions.classList.remove("show");
+        locationSuggestions.innerHTML = "";
+        return;
+      }
+
+      const q = query.toLowerCase();
+      const matches = dummyLocations.filter(l => (l.name + " " + l.sub).toLowerCase().includes(q)).slice(0, 5);
+      renderSuggestions(matches, query);
+    });
+
+    function submitTypedLocation() {
+      const query = locationInput.value.trim();
+      if (query) confirmLocation({ name: query, sub: "Custom location" });
+    }
+
+    locationInput.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return;
+      submitTypedLocation();
+    });
+
+    btnLocationGo.addEventListener("click", submitTypedLocation);
+
+    // Picking a result (or hitting Enter) immediately flies the map there —
+    // no extra confirm click needed.
+    function confirmLocation(loc) {
+      if (workspaceState.locationConfirmed) {
+        points = [];
+        isDrawing = false;
+        renderPoints();
+        statsLabel.textContent = "Site Area";
+        statsValue.textContent = "— m²";
+        workspaceState.boundarySaved = false;
+        hasShownBoundaryComplete = false;
+        mapContainer.classList.remove("boundary-editable");
+        updateTabLocks();
+        drawnPolygon.setAttribute("fill", "rgba(37, 99, 235, 0.15)");
+        drawnPolygon.setAttribute("stroke", "#2563eb");
+        arrivalPin.classList.remove("drop");
+        arrivalPin.style.display = "none";
+      }
+
+      workspaceState.selectedLocation = loc;
+      locationSuggestions.classList.remove("show");
+      locationSearchField.classList.add("loading");
+      locationInput.value = loc.name;
+      locationInput.blur();
+
+      const mapQuery = [loc.name, loc.sub].filter(Boolean).join(", ");
+      mapSvg.src = `https://www.google.com/maps?q=${encodeURIComponent(mapQuery)}&z=15&output=embed`;
+
+      setTimeout(() => {
+        closeModal(locationModal);
+        mapSearchBar.classList.remove("show");
+        locationSearchField.classList.remove("loading");
+        showToast(`Navigating to ${loc.name}…`);
+
+        mapSvg.classList.remove("svg-unfocused");
+        mapFadedMask.style.opacity = "0.8";
+        [mapTools, mapZoom, statsChip].forEach(el => el.classList.remove("hidden-until-located"));
+
+        setTimeout(() => {
+          arrivalPin.style.display = "flex";
+          arrivalPin.classList.add("drop");
+        }, 550);
+
+        setTimeout(() => {
+          workspaceState.locationConfirmed = true;
+          showToast(`Arrived at ${loc.name}`);
+
+          markupModalTitle.textContent = "You've arrived";
+          markupModalSub.textContent = `Now trace the outline of your project site around ${loc.name}.`;
+          btnModalStart.querySelector("span").textContent = "Start Markup";
+          openModal(markupModal);
+        }, 1550);
+      }, 850);
+    }
+
+    // Toolbar controls
+    const toolPan = document.getElementById("toolPan");
+    const toolPolygon = document.getElementById("toolPolygon");
+    const toolRect = document.getElementById("toolRect");
+    const toolClear = document.getElementById("toolClear");
+
+    function setToolbarActive(tool) {
+      [toolPan, toolPolygon, toolRect].forEach(b => b.classList.remove("active"));
+      if (tool === "pan") toolPan.classList.add("active");
+      if (tool === "polygon") toolPolygon.classList.add("active");
+      if (tool === "rectangle") toolRect.classList.add("active");
+    }
+
+    function activateTool(tool) {
+      selectedTool = tool;
+      setToolbarActive(tool);
+
+      if (tool === "pan") {
+        mapContainer.classList.remove("drawing-mode");
+        return;
+      }
+
+      mapContainer.classList.add("drawing-mode");
+      if (tool === "polygon") {
+        showToast("Click on map to place boundary points. Double-click to finish.");
+      } else {
+        showToast("Click two opposite corners to define boundary box.");
+      }
+    }
+
+    toolPan.addEventListener("click", () => activateTool("pan"));
+    toolPolygon.addEventListener("click", () => activateTool("polygon"));
+    toolRect.addEventListener("click", () => activateTool("rectangle"));
+
+    // Map drawing interactions
+    function getSvgPos(e) {
+      const rect = mapDrawLayer.getBoundingClientRect();
+      return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    }
+
+    mapDrawLayer.addEventListener("click", (e) => {
+      if (selectedTool === "pan") return;
+      const pos = getSvgPos(e);
+
+      if (selectedTool === "polygon") {
+        if (points.length >= 3) {
+          const first = points[0];
+          if (Math.hypot(first.x - pos.x, first.y - pos.y) < 16) {
+            finishDrawing();
+            return;
+          }
+        }
+        points.push(pos);
+        renderPoints();
+        isDrawing = true;
+        rubberbandPath.style.display = "block";
+      } else if (selectedTool === "rectangle") {
+        if (points.length === 0) {
+          points.push(pos);
+          isDrawing = true;
+        } else {
+          const p1 = points[0];
+          points = [
+            { x: p1.x, y: p1.y },
+            { x: pos.x, y: p1.y },
+            { x: pos.x, y: pos.y },
+            { x: p1.x, y: pos.y }
+          ];
+          finishDrawing();
+        }
+      }
+    });
+
+    mapDrawLayer.addEventListener("mousemove", (e) => {
+      if (!isDrawing || points.length === 0) return;
+      const pos = getSvgPos(e);
+      const last = points[points.length - 1];
+      rubberbandPath.setAttribute("d", `M ${last.x} ${last.y} L ${pos.x} ${pos.y}`);
+    });
+
+    mapDrawLayer.addEventListener("dblclick", (e) => {
+      e.preventDefault();
+      if (selectedTool === "polygon" && isDrawing && points.length >= 3) finishDrawing();
+    });
+
+    let draggingPointIndex = null;
+
+    mapDrawLayer.addEventListener("pointermove", (e) => {
+      if (draggingPointIndex === null) return;
+      points[draggingPointIndex] = getSvgPos(e);
+      renderPoints();
+    });
+
+    mapDrawLayer.addEventListener("pointerup", () => {
+      if (draggingPointIndex === null) return;
+      draggingPointIndex = null;
+      autosaveBoundary(false);
+      showToast("Boundary updated automatically.");
+    });
+
+    function renderPoints() {
+      if (points.length === 0) {
+        drawnPolygon.style.display = "none";
+        rubberbandPath.style.display = "none";
+        markersGroup.innerHTML = "";
+        return;
+      }
+
+      drawnPolygon.setAttribute("points", points.map(p => `${p.x},${p.y}`).join(" "));
+      drawnPolygon.style.display = "block";
+
+      markersGroup.innerHTML = "";
+      points.forEach((p, i) => {
+        const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        dot.setAttribute("cx", p.x);
+        dot.setAttribute("cy", p.y);
+        dot.setAttribute("r", i === 0 ? "6" : "4.5");
+        dot.setAttribute("fill", i === 0 ? "#10b981" : "#2563eb");
+        dot.setAttribute("stroke", "#ffffff");
+        dot.setAttribute("stroke-width", "2");
+        dot.style.cursor = "grab";
+        dot.addEventListener("click", e => {
+          e.stopPropagation();
+          if (isDrawing && selectedTool === "polygon" && i === 0 && points.length >= 3) {
+            finishDrawing();
+          }
+        });
+        dot.addEventListener("pointerdown", e => {
+          if (isDrawing) return;
+          e.preventDefault();
+          e.stopPropagation();
+          draggingPointIndex = i;
+          mapDrawLayer.setPointerCapture(e.pointerId);
+        });
+        markersGroup.appendChild(dot);
+      });
+
+      calculateArea();
+    }
+
+    function finishDrawing() {
+      isDrawing = false;
+      rubberbandPath.style.display = "none";
+      rubberbandPath.setAttribute("d", "");
+      renderPoints();
+      zoomToBoundary();
+      autosaveBoundary(true);
+      showToast("Perfect — your markup is saved. You can still adjust any point.");
+    }
+
+    function zoomToBoundary() {
+      if (points.length < 3) return;
+      const xs = points.map(point => point.x);
+      const ys = points.map(point => point.y);
+      const centerX = (Math.min(...xs) + Math.max(...xs)) / 2;
+      const centerY = (Math.min(...ys) + Math.max(...ys)) / 2;
+      zoomLevel = Math.max(zoomLevel, 1.35);
+      mapViewport.style.transformOrigin = `${centerX}px ${centerY}px`;
+      mapViewport.style.transform = `scale(${zoomLevel})`;
+    }
+
+    let hasShownBoundaryComplete = false;
+
+    function autosaveBoundary(showCompletion) {
+      if (points.length < 3) return;
+      statsLabel.textContent = "Site Area (Autosaved)";
+      mapFadedMask.style.opacity = "0.15";
+      drawnPolygon.setAttribute("fill", "rgba(16, 185, 129, 0.16)");
+      drawnPolygon.setAttribute("stroke", "#10b981");
+      workspaceState.boundarySaved = true;
+      mapContainer.classList.remove("drawing-mode");
+      mapContainer.classList.add("boundary-editable");
+      selectedTool = "pan";
+      setToolbarActive("pan");
+      updateTabLocks();
+      document.getElementById("completeAreaValue").textContent = statsValue.textContent;
+      document.getElementById("completeLocationValue").textContent =
+        (workspaceState.selectedLocation && workspaceState.selectedLocation.name) || "—";
+
+      mapTools.classList.add("collapsed");
+
+      if (showCompletion && !hasShownBoundaryComplete) {
+        hasShownBoundaryComplete = true;
+        setTimeout(() => openModal(document.getElementById("setupCompleteModal")), 900);
+      }
+    }
+
+    function calculateArea() {
+      if (points.length < 3) {
+        statsValue.textContent = "— m²";
+        return;
+      }
+      let area = 0;
+      for (let i = 0; i < points.length; i++) {
+        const j = (i + 1) % points.length;
+        area += points[i].x * points[j].y - points[j].x * points[i].y;
+      }
+      area = Math.abs(area) / 2;
+      const realArea = Math.round(area * 25);
+      statsValue.textContent = `${realArea.toLocaleString()} m²`;
+    }
+
+    toolClear.addEventListener("click", () => {
+      points = [];
+      isDrawing = false;
+      renderPoints();
+      statsLabel.textContent = "Site Area";
+      statsValue.textContent = "— m²";
+      workspaceState.boundarySaved = false;
+      hasShownBoundaryComplete = false;
+      mapContainer.classList.remove("boundary-editable");
+      drawnPolygon.setAttribute("fill", "rgba(37, 99, 235, 0.15)");
+      drawnPolygon.setAttribute("stroke", "#2563eb");
+      mapTools.classList.remove("collapsed");
+      updateTabLocks();
+      showToast("Boundary cleared");
+    });
+
+    document.getElementById("btnCompleteContinue").addEventListener("click", () => {
+      closeModal(document.getElementById("setupCompleteModal"));
+      showToast("Workspace ready — start building.");
+
+      setTimeout(() => {
+        openModal(document.getElementById("plannerReadyModal"));
+      }, 550);
+    });
+
+    // Final step of the whole setup flow — nothing opens after this closes
+    const plannerReadyModal = document.getElementById("plannerReadyModal");
+
+    function closePlannerModal() {
+      closeModal(plannerReadyModal);
+    }
+
+    document.getElementById("btnPlannerClose").addEventListener("click", closePlannerModal);
+    document.getElementById("btnPlannerSkip").addEventListener("click", closePlannerModal);
+
+    document.getElementById("btnExplorePlanning").addEventListener("click", () => {
+      closePlannerModal();
+      openPlannerDrawer();
+      showToast("Here's your project planner");
+    });
+
+    /* =========================================
+       PROJECT PLANNER DRAWER
+       Dummy WBS data (Phase → Category → Item) seeded from whichever
+       project type was picked in the setup wizard. Opens via the topbar
+       "View Planner" button or "Explore planning" on the closing modal.
+       ========================================= */
+    const plannerTemplates = {
+      "Pre-Construction": [
+        { phase: "1. Feasibility & Planning", categories: [
+          { name: "1.1 Site Assessment", items: ["Site survey review", "Zoning verification", "Utility mapping"] },
+          { name: "1.2 Budget & Schedule", items: ["Preliminary cost estimate", "Master schedule draft"] }
+        ]},
+        { phase: "2. Design Development", categories: [
+          { name: "2.1 Concept Design", items: ["Massing studies", "Design intent report"] },
+          { name: "2.2 Design Coordination", items: ["Architectural review", "Structural review", "MEP coordination"] }
+        ]},
+        { phase: "3. Permitting & Approvals", categories: [
+          { name: "3.1 Regulatory Submission", items: ["Building permit application", "Environmental clearance"] },
+          { name: "3.2 Stakeholder Sign-off", items: ["Client approval", "Authority approval"] }
+        ]},
+        { phase: "4. Procurement Setup", categories: [
+          { name: "4.1 Contractor Selection", items: ["Tender documentation", "Bid evaluation"] },
+          { name: "4.2 Vendor Onboarding", items: ["Contract finalization", "Kickoff scheduling"] }
+        ]}
+      ],
+
+      "Construction": [
+        { phase: "1. Site Preparation", categories: [
+          { name: "1.1 Mobilization", items: ["Site fencing", "Temporary facilities", "Utility connections"] },
+          { name: "1.2 Earthworks", items: ["Excavation", "Shoring", "Dewatering"] }
+        ]},
+        { phase: "2. Substructure", categories: [
+          { name: "2.1 Foundations", items: ["Piling", "Footings", "Waterproofing"] },
+          { name: "2.2 Basement Works", items: ["Retaining walls", "Basement slabs"] }
+        ]},
+        { phase: "3. Superstructure", categories: [
+          { name: "3.1 RC Vertical Elements", items: ["Columns", "Shear walls and cores", "Structural walls"] },
+          { name: "3.2 RC Horizontal Elements", items: ["Beams and slabs", "Transfer structures"] },
+          { name: "3.3 Structural Steel", items: ["Fabrication", "Erection", "Connections"] }
+        ]},
+        { phase: "4. Building Envelope & Roofing", categories: [
+          { name: "4.1 External Wall Assemblies", items: ["External masonry / panels", "Insulation and barriers"] },
+          { name: "4.2 Façade Systems", items: ["Curtain walling and glazing", "Cladding panels"] }
+        ]},
+        { phase: "5. MEP Installation", categories: [
+          { name: "5.1 Mechanical", items: ["Ductwork", "Equipment installation"] },
+          { name: "5.2 Electrical & Plumbing", items: ["Containment and cabling", "Piping and fixtures"] }
+        ]},
+        { phase: "6. Finishes & Handover", categories: [
+          { name: "6.1 Internal Finishes", items: ["Flooring", "Painting", "Ceilings"] },
+          { name: "6.2 Commissioning", items: ["System testing", "Snagging", "Final handover"] }
+        ]}
+      ],
+
+      "Interior Design": [
+        { phase: "1. Concept & Space Planning", categories: [
+          { name: "1.1 Concept Design", items: ["Mood boards", "Layout options"] },
+          { name: "1.2 Space Planning", items: ["Furniture layout", "Circulation study"] }
+        ]},
+        { phase: "2. Material Selection", categories: [
+          { name: "2.1 Finishes", items: ["Flooring samples", "Wall finishes", "Lighting fixtures"] },
+          { name: "2.2 Furniture & Fittings", items: ["FF&E schedule", "Vendor sourcing"] }
+        ]},
+        { phase: "3. Fit-Out Execution", categories: [
+          { name: "3.1 Carpentry & Joinery", items: ["Custom cabinetry", "Wall paneling"] },
+          { name: "3.2 MEP Fit-Out", items: ["Lighting installation", "AV integration"] }
+        ]},
+        { phase: "4. Styling & Handover", categories: [
+          { name: "4.1 Styling", items: ["Accessories placement", "Final styling walkthrough"] },
+          { name: "4.2 Handover", items: ["Snagging", "Client walkthrough"] }
+        ]}
+      ],
+
+      "Scan to BIM": [
+        { phase: "1. Site Scanning", categories: [
+          { name: "1.1 Scan Planning", items: ["Scan point layout", "Control network setup"] },
+          { name: "1.2 Field Capture", items: ["Laser scanning", "Photogrammetry capture"] }
+        ]},
+        { phase: "2. Point Cloud Processing", categories: [
+          { name: "2.1 Registration", items: ["Cloud alignment", "Noise cleanup"] },
+          { name: "2.2 Georeferencing", items: ["Coordinate transformation", "Accuracy check"] }
+        ]},
+        { phase: "3. Model Authoring", categories: [
+          { name: "3.1 Architectural Modeling", items: ["Walls and openings", "Floors and ceilings"] },
+          { name: "3.2 MEP & Structural Modeling", items: ["Structural elements", "MEP systems"] }
+        ]},
+        { phase: "4. QA & Validation", categories: [
+          { name: "4.1 Model Review", items: ["Deviation analysis", "Clash review"] },
+          { name: "4.2 Delivery", items: ["Model export", "Client handover"] }
+        ]}
+      ],
+
+      "Digital Twin": [
+        { phase: "1. Data Capture", categories: [
+          { name: "1.1 Reality Capture", items: ["Laser scanning", "Drone survey"] },
+          { name: "1.2 Asset Data Collection", items: ["Equipment tagging", "Nameplate data"] }
+        ]},
+        { phase: "2. Model Integration", categories: [
+          { name: "2.1 BIM Integration", items: ["Model federation", "Data mapping"] },
+          { name: "2.2 GIS Integration", items: ["Spatial linking", "Context data import"] }
+        ]},
+        { phase: "3. Sensor & IoT Linking", categories: [
+          { name: "3.1 Sensor Deployment", items: ["IoT device installation", "Network configuration"] },
+          { name: "3.2 Data Pipeline", items: ["Live data feed setup", "Dashboard configuration"] }
+        ]},
+        { phase: "4. Simulation & Monitoring", categories: [
+          { name: "4.1 Simulation", items: ["Performance modeling", "Scenario testing"] },
+          { name: "4.2 Ongoing Monitoring", items: ["Anomaly detection", "Reporting"] }
+        ]}
+      ],
+
+      "Facility Management": [
+        { phase: "1. Asset Registration", categories: [
+          { name: "1.1 Asset Inventory", items: ["Equipment listing", "Barcode/QR tagging"] },
+          { name: "1.2 Documentation", items: ["O&M manuals", "Warranty records"] }
+        ]},
+        { phase: "2. Preventive Maintenance", categories: [
+          { name: "2.1 PM Scheduling", items: ["Maintenance calendar", "Task assignments"] },
+          { name: "2.2 Work Orders", items: ["Work order tracking", "Spare parts management"] }
+        ]},
+        { phase: "3. Space Management", categories: [
+          { name: "3.1 Space Utilization", items: ["Occupancy tracking", "Space allocation"] },
+          { name: "3.2 Moves & Changes", items: ["Move requests", "Layout updates"] }
+        ]},
+        { phase: "4. Compliance & Reporting", categories: [
+          { name: "4.1 Compliance", items: ["Safety inspections", "Regulatory audits"] },
+          { name: "4.2 Reporting", items: ["Performance dashboards", "Cost reports"] }
+        ]}
+      ],
+
+      "CAD to BIM": [
+        { phase: "1. CAD Audit", categories: [
+          { name: "1.1 Drawing Review", items: ["Layer standards check", "Drawing completeness"] },
+          { name: "1.2 Data Preparation", items: ["File cleanup", "Reference linking"] }
+        ]},
+        { phase: "2. Model Conversion", categories: [
+          { name: "2.1 Architectural Conversion", items: ["Walls and floors", "Doors and windows"] },
+          { name: "2.2 MEP & Structural Conversion", items: ["Structural framing", "MEP systems"] }
+        ]},
+        { phase: "3. Clash Detection", categories: [
+          { name: "3.1 Coordination Review", items: ["Clash detection run", "Clash resolution"] },
+          { name: "3.2 Model Validation", items: ["Parameter checks", "Standards compliance"] }
+        ]},
+        { phase: "4. Documentation", categories: [
+          { name: "4.1 Sheet Production", items: ["Plans and sections", "Schedules"] },
+          { name: "4.2 Delivery", items: ["Model handover", "Client sign-off"] }
+        ]}
+      ],
+
+      "As Built": [
+        { phase: "1. Field Verification", categories: [
+          { name: "1.1 Site Walkthrough", items: ["Condition survey", "Photo documentation"] },
+          { name: "1.2 Measurement Capture", items: ["Laser measurement", "Manual verification"] }
+        ]},
+        { phase: "2. Model Update", categories: [
+          { name: "2.1 Model Revision", items: ["Geometry updates", "Parameter updates"] },
+          { name: "2.2 System Updates", items: ["MEP as-built updates", "Structural updates"] }
+        ]},
+        { phase: "3. Deviation Reporting", categories: [
+          { name: "3.1 Deviation Analysis", items: ["Design vs. built comparison", "Variance report"] },
+          { name: "3.2 Change Documentation", items: ["RFIs and change logs"] }
+        ]},
+        { phase: "4. Final Documentation", categories: [
+          { name: "4.1 As-Built Drawings", items: ["Drawing set finalization", "Markup incorporation"] },
+          { name: "4.2 Handover", items: ["Final model delivery", "Record set handover"] }
+        ]}
+      ],
+
+      "GIS": [
+        { phase: "1. Data Collection", categories: [
+          { name: "1.1 Field Data", items: ["GPS survey points", "Field attribute collection"] },
+          { name: "1.2 Remote Sensing", items: ["Satellite imagery", "Aerial imagery"] }
+        ]},
+        { phase: "2. Spatial Referencing", categories: [
+          { name: "2.1 Georeferencing", items: ["Coordinate system setup", "Control point alignment"] },
+          { name: "2.2 Data Validation", items: ["Topology checks", "Attribute validation"] }
+        ]},
+        { phase: "3. GIS Modeling", categories: [
+          { name: "3.1 Layer Development", items: ["Base layers", "Thematic layers"] },
+          { name: "3.2 Spatial Analysis", items: ["Buffer analysis", "Overlay analysis"] }
+        ]},
+        { phase: "4. Map Production", categories: [
+          { name: "4.1 Cartography", items: ["Map layout design", "Symbology"] },
+          { name: "4.2 Delivery", items: ["Map publishing", "Data export"] }
+        ]}
+      ],
+
+      "Field Survey": [
+        { phase: "1. Control Survey", categories: [
+          { name: "1.1 Control Network", items: ["Benchmark establishment", "GPS control points"] },
+          { name: "1.2 Datum Setup", items: ["Coordinate system", "Vertical datum"] }
+        ]},
+        { phase: "2. Topographic Survey", categories: [
+          { name: "2.1 Field Data Capture", items: ["Total station survey", "GPS RTK survey"] },
+          { name: "2.2 Feature Survey", items: ["Boundary features", "Utility features"] }
+        ]},
+        { phase: "3. Data Processing", categories: [
+          { name: "3.1 Data Reduction", items: ["Field data import", "Error correction"] },
+          { name: "3.2 Drawing Production", items: ["Contour generation", "Topo plan drafting"] }
+        ]},
+        { phase: "4. Survey Reporting", categories: [
+          { name: "4.1 Quality Check", items: ["Accuracy verification", "Peer review"] },
+          { name: "4.2 Final Report", items: ["Survey report compilation", "Client delivery"] }
+        ]}
+      ]
+    };
+
+    const plannerDrawer = document.getElementById("plannerDrawer");
+    const plannerTree = document.getElementById("plannerTree");
+    let plannerData = null;
+
+    function initPlannerData() {
+      const key = plannerTemplates[projectType] ? projectType : "Construction";
+      plannerData = JSON.parse(JSON.stringify(plannerTemplates[key]));
+      document.getElementById("plannerDrawerType").textContent = key;
+    }
+
+    function showAddInput(container, placeholder, onCommit) {
+      const existing = container.querySelector(".planner-add-input-row");
+      if (existing) existing.remove();
+
+      const row = document.createElement("div");
+      row.className = "planner-add-input-row";
+      const input = document.createElement("input");
+      input.type = "text";
+      input.placeholder = placeholder;
+      row.appendChild(input);
+      container.appendChild(row);
+      container.classList.remove("collapsed");
+      input.focus();
+
+      let settled = false;
+      function commit() {
+        if (settled) return;
+        settled = true;
+        const value = input.value.trim();
+        row.remove();
+        if (value) onCommit(value);
+      }
+
+      input.addEventListener("keydown", e => {
+        if (e.key === "Enter") commit();
+        if (e.key === "Escape") { settled = true; row.remove(); }
+      });
+      input.addEventListener("blur", () => setTimeout(commit, 120));
+    }
+
+    function createPlannerNode(label, level, hasChildren) {
+      const row = document.createElement("div");
+      row.className = `planner-node level-${level}`;
+
+      const toggle = document.createElement("button");
+      toggle.type = "button";
+      toggle.className = "planner-node-toggle" + (hasChildren ? "" : " spacer");
+      if (hasChildren) toggle.innerHTML = `<i data-lucide="chevron-down"></i>`;
+      row.appendChild(toggle);
+
+      if (level === 2) {
+        const dot = document.createElement("span");
+        dot.className = "planner-node-dot";
+        row.appendChild(dot);
+      } else {
+        const icon = document.createElement("i");
+        icon.setAttribute("data-lucide", level === 0 ? "flag" : "folder");
+        icon.className = "planner-node-icon";
+        row.appendChild(icon);
+      }
+
+      const labelEl = document.createElement("span");
+      labelEl.className = "planner-node-label";
+      labelEl.textContent = label;
+      row.appendChild(labelEl);
+
+      if (level < 2) {
+        const addBtn = document.createElement("button");
+        addBtn.type = "button";
+        addBtn.className = "planner-node-add";
+        addBtn.title = level === 0 ? "Add category" : "Add item";
+        addBtn.innerHTML = `<i data-lucide="plus"></i>`;
+        row.appendChild(addBtn);
+      }
+
+      return row;
+    }
+
+    function renderPlannerTree() {
+      plannerTree.innerHTML = "";
+
+      plannerData.forEach(phase => {
+        const phaseWrap = document.createElement("div");
+        const phaseRow = createPlannerNode(phase.phase, 0, true);
+        phaseWrap.appendChild(phaseRow);
+
+        const catChildren = document.createElement("div");
+        catChildren.className = "planner-children";
+
+        phase.categories.forEach(category => {
+          const catWrap = document.createElement("div");
+          const catRow = createPlannerNode(category.name, 1, true);
+          catWrap.appendChild(catRow);
+
+          const itemChildren = document.createElement("div");
+          itemChildren.className = "planner-children";
+          category.items.forEach(item => {
+            itemChildren.appendChild(createPlannerNode(item, 2, false));
+          });
+          catWrap.appendChild(itemChildren);
+
+          catRow.querySelector(".planner-node-toggle").addEventListener("click", () => {
+            catRow.classList.toggle("collapsed");
+            itemChildren.classList.toggle("collapsed");
+          });
+          catRow.querySelector(".planner-node-add").addEventListener("click", e => {
+            e.stopPropagation();
+            showAddInput(itemChildren, "Item name…", value => {
+              category.items.push(value);
+              renderPlannerTree();
+            });
+          });
+
+          catChildren.appendChild(catWrap);
+        });
+
+        phaseWrap.appendChild(catChildren);
+
+        phaseRow.querySelector(".planner-node-toggle").addEventListener("click", () => {
+          phaseRow.classList.toggle("collapsed");
+          catChildren.classList.toggle("collapsed");
+        });
+        phaseRow.querySelector(".planner-node-add").addEventListener("click", e => {
+          e.stopPropagation();
+          showAddInput(catChildren, "Category name…", value => {
+            phase.categories.push({ name: value, items: [] });
+            renderPlannerTree();
+          });
+        });
+
+        plannerTree.appendChild(phaseWrap);
+      });
+
+      refreshIcons();
+    }
+
+    const railHierarchy = document.getElementById("railHierarchy");
+    const railPlanner = document.getElementById("railPlanner");
+    const hierarchyDrawer = document.getElementById("hierarchyDrawer");
+
+    function openPlannerDrawer() {
+      closeHierarchyDrawer();
+      if (!plannerData) initPlannerData();
+      renderPlannerTree();
+      plannerDrawer.classList.add("open");
+      railPlanner.classList.add("active");
+    }
+
+    function closePlannerDrawer() {
+      plannerDrawer.classList.remove("open");
+      railPlanner.classList.remove("active");
+    }
+
+    document.getElementById("btnClosePlannerDrawer").addEventListener("click", closePlannerDrawer);
+
+    railPlanner.addEventListener("click", () => {
+      if (railPlanner.disabled) return;
+      if (plannerDrawer.classList.contains("open")) closePlannerDrawer();
+      else openPlannerDrawer();
+    });
+
+    document.getElementById("btnAddPhase").addEventListener("click", () => {
+      if (!plannerData) initPlannerData();
+      showAddInput(plannerTree, "Phase name…", value => {
+        plannerData.push({ phase: value, categories: [] });
+        renderPlannerTree();
+      });
+    });
+
+    /* =========================================
+       LAYER HIERARCHY SIDEBAR
+       Site Boundary → Zone → Level → Service, seeded from whatever the
+       setup wizard produced (handed off via localStorage). If the user
+       went the Quick Setup route instead, the boundary just holds the
+       uploaded file. Every node here can be renamed, deleted, and
+       (where it makes sense) extended with new children.
+       ========================================= */
+    const HIERARCHY_RULES = {
+      boundary: { addLabel: "Add zone", childType: "zone", canDelete: false, canAddChild: true, icon: "flag" },
+      zone: { addLabel: "Add level", childType: "level", canDelete: true, canAddChild: true, icon: "layers-3" },
+      level: { addLabel: "Add service", childType: "service", canDelete: true, canAddChild: true, icon: "building-2" },
+      service: { addLabel: null, childType: null, canDelete: true, canAddChild: false, icon: "wrench" },
+      // A holding folder for every uploaded 2D/3D file that isn't tied to a
+      // zone — it appears once there's at least one, and disappears again
+      // once the last file in it is deleted.
+      uncategorised: { addLabel: null, childType: null, canDelete: false, canAddChild: false, icon: "folder" },
+      libraryFile: { addLabel: null, childType: null, canDelete: true, canAddChild: false, icon: "file-text" }
+    };
+
+    let hierarchyData = null;
+
+    function initHierarchyData() {
+      const payload = setupPayload;
+      const name = projParam || (payload && payload.projectName) || "Untitled Project";
+      const root = { type: "boundary", name: `${name} Site Boundary`, children: [] };
+
+      if (payload && Array.isArray(payload.zones) && payload.zones.length) {
+        payload.zones.forEach((zoneName, zIndex) => {
+          const zoneNode = { type: "zone", name: zoneName, children: [] };
+          const levels = (payload.levelsPerZone && payload.levelsPerZone[zIndex]) || [];
+          levels.forEach((levelName, lIndex) => {
+            const levelNode = { type: "level", name: levelName, children: [] };
+            const services = (payload.servicesPerFloor && payload.servicesPerFloor[`${zIndex}_${lIndex}`]) || [];
+            services.forEach(serviceName => {
+              levelNode.children.push({ type: "service", name: serviceName, children: [] });
+            });
+            zoneNode.children.push(levelNode);
+          });
+          root.children.push(zoneNode);
+        });
+      }
+
+      // Every uploaded 2D/3D file that isn't part of a zone lives in one
+      // shared "Uncategorised" folder — as many as the user has added.
+      const uncategorisedChildren = [];
+      ["2D Drawing", "3D BIM Model"].forEach(fileType => {
+        const icon = fileType === "3D BIM Model" ? "box" : "file-text";
+        liveFiles[fileType].forEach(file => {
+          uncategorisedChildren.push({
+            type: "libraryFile",
+            name: file.name || "Untitled",
+            icon,
+            tag: fileType,
+            fileType,
+            fileId: file.id,
+            children: []
+          });
+        });
+      });
+
+      if (uncategorisedChildren.length) {
+        root.children.push({ type: "uncategorised", name: "Uncategorised", children: uncategorisedChildren });
+      }
+
+      hierarchyData = root;
+    }
+
+    // Drops a freshly-uploaded file into the tree that's already built,
+    // instead of rebuilding it (which would discard any renames/edits the
+    // user already made this session).
+    function startRename(labelEl, currentName, onCommit) {
+      const input = document.createElement("input");
+      input.type = "text";
+      input.className = "planner-rename-input";
+      input.value = currentName;
+      labelEl.replaceWith(input);
+      input.focus();
+      input.select();
+
+      let settled = false;
+      function commit() {
+        if (settled) return;
+        settled = true;
+        const value = input.value.trim();
+        if (value) onCommit(value);
+        else renderHierarchyTree();
+      }
+
+      input.addEventListener("keydown", e => {
+        if (e.key === "Enter") commit();
+        if (e.key === "Escape") { settled = true; renderHierarchyTree(); }
+      });
+      input.addEventListener("blur", () => setTimeout(commit, 120));
+    }
+
+    function createHierarchyRowParts(node, level) {
+      const rules = HIERARCHY_RULES[node.type] || {};
+      const hasChildren = !!(node.children && node.children.length);
+
+      const row = document.createElement("div");
+      row.className = `planner-node level-${level}`;
+      row.dataset.nodeType = node.type;
+      if (node.tag) row.dataset.nodeTag = node.tag;
+      if (node.fileId) row.dataset.fileId = node.fileId;
+
+      const toggle = document.createElement("button");
+      toggle.type = "button";
+      toggle.className = "planner-node-toggle" + (hasChildren ? "" : " spacer");
+      if (hasChildren) toggle.innerHTML = `<i data-lucide="chevron-down"></i>`;
+      row.appendChild(toggle);
+
+      const icon = document.createElement("i");
+      icon.setAttribute("data-lucide", node.icon || rules.icon || "circle");
+      icon.className = "planner-node-icon";
+      row.appendChild(icon);
+
+      if (node.tag) {
+        const tag = document.createElement("span");
+        tag.className = "planner-node-tag";
+        tag.textContent = node.tag;
+        row.appendChild(tag);
+      }
+
+      const labelEl = document.createElement("span");
+      labelEl.className = "planner-node-label";
+      labelEl.textContent = node.name;
+      labelEl.title = node.name;
+      row.appendChild(labelEl);
+
+      const editBtn = document.createElement("button");
+      editBtn.type = "button";
+      editBtn.className = "planner-node-edit";
+      editBtn.title = "Rename";
+      editBtn.innerHTML = `<i data-lucide="pencil"></i>`;
+      row.appendChild(editBtn);
+
+      let addBtn = null;
+      if (rules.canAddChild) {
+        addBtn = document.createElement("button");
+        addBtn.type = "button";
+        addBtn.className = "planner-node-add";
+        addBtn.title = rules.addLabel;
+        addBtn.innerHTML = `<i data-lucide="plus"></i>`;
+        row.appendChild(addBtn);
+      }
+
+      let deleteBtn = null;
+      if (rules.canDelete) {
+        deleteBtn = document.createElement("button");
+        deleteBtn.type = "button";
+        deleteBtn.className = "planner-node-delete";
+        deleteBtn.title = "Delete";
+        deleteBtn.innerHTML = `<i data-lucide="trash-2"></i>`;
+        row.appendChild(deleteBtn);
+      }
+
+      return { row, toggle, labelEl, editBtn, addBtn, deleteBtn, rules };
+    }
+
+    // Switches which uploaded file of a given type is showing in its
+    // viewer, and highlights that file's row in the tree.
+    function activateLibraryFile(fileType, fileId, rowEl) {
+      if (fileType === "2D Drawing") {
+        active2DFileId = fileId;
+        applyDrawingSheetImage();
+        switchToTab("tab2D");
+      } else {
+        active3DFileId = fileId;
+        updateThreeDFileLabel();
+        switchToTab("tab3D");
+        if (window.onThreeResize) setTimeout(window.onThreeResize, 60);
+      }
+      document.querySelectorAll("#hierarchyTree .planner-node.node-active").forEach(el => el.classList.remove("node-active"));
+      if (rowEl) rowEl.classList.add("node-active");
+    }
+
+    function renderHierarchyNode(node, level, parentArray) {
+      const { row, toggle, labelEl, editBtn, addBtn, deleteBtn, rules } = createHierarchyRowParts(node, level);
+      const wrap = document.createElement("div");
+      wrap.appendChild(row);
+
+      let childrenWrap = null;
+      function ensureChildrenWrap() {
+        if (childrenWrap) return childrenWrap;
+        childrenWrap = document.createElement("div");
+        childrenWrap.className = "planner-children";
+        wrap.appendChild(childrenWrap);
+        toggle.classList.remove("spacer");
+        toggle.innerHTML = `<i data-lucide="chevron-down"></i>`;
+        toggle.addEventListener("click", () => {
+          row.classList.toggle("collapsed");
+          childrenWrap.classList.toggle("collapsed");
+        });
+        refreshIcons();
+        return childrenWrap;
+      }
+
+      if (node.children && node.children.length) {
+        const cw = ensureChildrenWrap();
+        node.children.forEach(child => {
+          cw.appendChild(renderHierarchyNode(child, level + 1, node.children));
+        });
+        // Start collapsed — only the root opens by default, everything below it
+        // is revealed as the user expands it, not dumped on-screen all at once.
+        row.classList.add("collapsed");
+        cw.classList.add("collapsed");
+      }
+
+      if (node.type === "libraryFile") {
+        // Clicking the row itself (not its edit/delete buttons) opens this
+        // file in its viewer — the tree doubles as the file switcher.
+        const activeId = node.fileType === "2D Drawing" ? active2DFileId : active3DFileId;
+        if (node.fileId === activeId) row.classList.add("node-active");
+        row.addEventListener("click", () => activateLibraryFile(node.fileType, node.fileId, row));
+      }
+
+      editBtn.addEventListener("click", e => {
+        e.stopPropagation();
+        startRename(labelEl, node.name, value => {
+          node.name = value;
+          if (node.type === "libraryFile") {
+            const entry = liveFiles[node.fileType].find(f => f.id === node.fileId);
+            if (entry) entry.name = value;
+            persistLiveSetup();
+          }
+          renderHierarchyTree();
+        });
+      });
+
+      if (addBtn) {
+        addBtn.addEventListener("click", e => {
+          e.stopPropagation();
+          const cw = ensureChildrenWrap();
+          const childType = rules.childType;
+          showAddInput(cw, `${childType.charAt(0).toUpperCase()}${childType.slice(1)} name…`, value => {
+            node.children = node.children || [];
+            node.children.push({ type: childType, name: value, children: [] });
+            renderHierarchyTree();
+          });
+        });
+      }
+
+      if (deleteBtn) {
+        deleteBtn.addEventListener("click", e => {
+          e.stopPropagation();
+          const idx = parentArray.indexOf(node);
+          if (idx > -1) parentArray.splice(idx, 1);
+
+          if (node.type === "libraryFile") {
+            const arr = liveFiles[node.fileType];
+            const arrIdx = arr.findIndex(f => f.id === node.fileId);
+            if (arrIdx > -1) arr.splice(arrIdx, 1);
+            persistLiveSetup();
+            updateTabLocks();
+
+            if (node.fileType === "2D Drawing") {
+              if (active2DFileId === node.fileId) active2DFileId = arr.length ? arr[arr.length - 1].id : null;
+              applyDrawingSheetImage();
+            } else {
+              if (active3DFileId === node.fileId) active3DFileId = arr.length ? arr[arr.length - 1].id : null;
+              updateThreeDFileLabel();
+            }
+
+            // The Uncategorised folder only exists while it has files in it.
+            if (parentArray.length === 0) {
+              const folderIdx = hierarchyData.children.findIndex(c => c.children === parentArray);
+              if (folderIdx > -1) hierarchyData.children.splice(folderIdx, 1);
+            }
+          }
+
+          renderHierarchyTree();
+          showToast(`${node.name} removed`);
+        });
+      }
+
+      return wrap;
+    }
+
+    function renderHierarchyTree() {
+      const container = document.getElementById("hierarchyTree");
+      container.innerHTML = "";
+      if (!hierarchyData) return;
+
+      const { row, toggle, labelEl, editBtn, addBtn } = createHierarchyRowParts(hierarchyData, 0);
+      container.appendChild(row);
+
+      editBtn.addEventListener("click", e => {
+        e.stopPropagation();
+        startRename(labelEl, hierarchyData.name, value => {
+          hierarchyData.name = value;
+          renderHierarchyTree();
+        });
+      });
+
+      let childrenWrap = null;
+      function ensureRootChildrenWrap() {
+        if (childrenWrap) return childrenWrap;
+        const emptyHint = container.querySelector(".drawer-empty-hint");
+        if (emptyHint) emptyHint.remove();
+        childrenWrap = document.createElement("div");
+        childrenWrap.className = "planner-children";
+        container.appendChild(childrenWrap);
+        toggle.classList.remove("spacer");
+        toggle.innerHTML = `<i data-lucide="chevron-down"></i>`;
+        toggle.addEventListener("click", () => {
+          row.classList.toggle("collapsed");
+          childrenWrap.classList.toggle("collapsed");
+        });
+        return childrenWrap;
+      }
+
+      if (hierarchyData.children && hierarchyData.children.length) {
+        const cw = ensureRootChildrenWrap();
+        hierarchyData.children.forEach(child => {
+          cw.appendChild(renderHierarchyNode(child, 1, hierarchyData.children));
+        });
+      } else {
+        const empty = document.createElement("div");
+        empty.className = "drawer-empty-hint";
+        empty.textContent = "No zones yet — add your first zone to start building the hierarchy.";
+        container.appendChild(empty);
+      }
+
+      if (addBtn) {
+        addBtn.addEventListener("click", e => {
+          e.stopPropagation();
+          const cw = ensureRootChildrenWrap();
+          showAddInput(cw, "Zone name…", value => {
+            hierarchyData.children = hierarchyData.children || [];
+            hierarchyData.children.push({ type: "zone", name: value, children: [] });
+            renderHierarchyTree();
+          });
+        });
+      }
+
+      updateHierarchyStickyFooter();
+      refreshIcons();
+    }
+
+    // Offers whichever setup path the project is missing — pinned to the
+    // bottom of the drawer so it's always reachable, not buried at the end
+    // of a scrolling tree. Both options route to the wizard's own existing
+    // steps — no duplicate upload UI here.
+    function updateHierarchyStickyFooter() {
+      const footer = document.getElementById("hierarchyStickyFooter");
+      if (!footer || !hierarchyData) return;
+
+      const hasZones = (hierarchyData.children || []).some(child => child.type === "zone");
+      footer.innerHTML = "";
+
+      if (!hasZones) {
+        const cta = document.createElement("button");
+        cta.type = "button";
+        cta.className = "drawer-hierarchy-cta";
+        cta.innerHTML = `<i data-lucide="layers-3"></i><span>Set up hierarchy</span>`;
+        cta.addEventListener("click", goToHierarchyWizard);
+        footer.appendChild(cta);
+      }
+
+      // Always offered — a project can carry as many 2D/3D files as the
+      // user wants to add, not just one of each.
+      const uploadCta = document.createElement("button");
+      uploadCta.type = "button";
+      uploadCta.className = "drawer-hierarchy-cta";
+      uploadCta.innerHTML = `<i data-lucide="upload-cloud"></i><span>Upload a drawing</span>`;
+      uploadCta.addEventListener("click", () => goToQuickUploadWizard());
+      footer.appendChild(uploadCta);
+
+      footer.hidden = footer.children.length === 0;
+      refreshIcons();
+    }
+
+    function openHierarchyDrawer() {
+      closePlannerDrawer();
+      if (!hierarchyData) initHierarchyData();
+      renderHierarchyTree();
+      hierarchyDrawer.classList.add("open");
+      railHierarchy.classList.add("active");
+    }
+
+    function closeHierarchyDrawer() {
+      hierarchyDrawer.classList.remove("open");
+      railHierarchy.classList.remove("active");
+      const popover = document.getElementById("hierarchyAddPopover");
+      if (popover) { popover.hidden = true; document.getElementById("btnHierarchyAdd").classList.remove("active"); }
+      const searchBar = document.getElementById("hierarchySearchBar");
+      if (searchBar && !searchBar.hidden) {
+        searchBar.hidden = true;
+        document.getElementById("hierarchySearchInput").value = "";
+        filterHierarchyTree("");
+      }
+    }
+
+    // Marks the uploaded drawing's node as the active one in the tree —
+    // used when the user clicks the drawing/model itself in the 2D or 3D
+    // viewer. Falls back to any file node if the specific type isn't given.
+    // Un-collapses every ancestor group of a node so it's actually visible,
+    // not just marked active while hidden inside a collapsed branch.
+    function expandAncestorsOf(el) {
+      let childrenWrap = el.closest(".planner-children");
+      while (childrenWrap) {
+        childrenWrap.classList.remove("collapsed");
+        const toggleRow = childrenWrap.previousElementSibling;
+        if (toggleRow && toggleRow.classList.contains("planner-node")) {
+          toggleRow.classList.remove("collapsed");
+          childrenWrap = toggleRow.parentElement ? toggleRow.parentElement.closest(".planner-children") : null;
+        } else {
+          childrenWrap = null;
+        }
+      }
+    }
+
+    function highlightHierarchyFileNode(type) {
+      document.querySelectorAll("#hierarchyTree .planner-node.node-active").forEach(el => el.classList.remove("node-active"));
+      const activeId = type === "3D BIM Model" ? active3DFileId : active2DFileId;
+      const selector = activeId
+        ? `#hierarchyTree .planner-node[data-node-type="libraryFile"][data-file-id="${activeId}"]`
+        : type
+          ? `#hierarchyTree .planner-node[data-node-type="libraryFile"][data-node-tag="${type}"]`
+          : '#hierarchyTree .planner-node[data-node-type="libraryFile"]';
+      const row = document.querySelector(selector);
+      if (row) {
+        row.classList.add("node-active");
+        expandAncestorsOf(row);
+        row.scrollIntoView({ block: "nearest" });
+      }
+    }
+
+    function openHierarchyDrawerForFile(type) {
+      openHierarchyDrawer();
+      highlightHierarchyFileNode(type);
+    }
+
+    document.getElementById("btnCloseHierarchyDrawer").addEventListener("click", closeHierarchyDrawer);
+
+    railHierarchy.addEventListener("click", () => {
+      if (hierarchyDrawer.classList.contains("open")) closeHierarchyDrawer();
+      else openHierarchyDrawer();
+    });
+
+    // Header "+" — a small popover offering the same two setup paths as
+    // the full Setup Choice modal, without leaving the drawer.
+    const hierarchyAddPopover = document.getElementById("hierarchyAddPopover");
+    const btnHierarchyAdd = document.getElementById("btnHierarchyAdd");
+
+    function closeHierarchyAddPopover() {
+      hierarchyAddPopover.hidden = true;
+      btnHierarchyAdd.classList.remove("active");
+    }
+
+    btnHierarchyAdd.addEventListener("click", e => {
+      e.stopPropagation();
+      const willOpen = hierarchyAddPopover.hidden;
+      closeHierarchyAddPopover();
+      if (willOpen) {
+        // Re-running "Create hierarchy" once zones already exist would send
+        // the user through the wizard again and overwrite them on save —
+        // disable it (with an explanation) rather than let that happen by
+        // accident. Quick Setup stays enabled always — a project can carry
+        // as many 2D/3D files as the user wants to add.
+        const hasZonesAlready = !!(hierarchyData && (hierarchyData.children || []).some(c => c.type === "zone"));
+        const createBtn = document.getElementById("popoverCreateHierarchy");
+        createBtn.disabled = hasZonesAlready;
+        document.getElementById("popoverCreateHierarchyHint").hidden = !hasZonesAlready;
+
+        hierarchyAddPopover.hidden = false;
+        btnHierarchyAdd.classList.add("active");
+      }
+    });
+
+    document.addEventListener("click", e => {
+      if (!hierarchyAddPopover.hidden && !e.target.closest("#hierarchyHeaderTools")) closeHierarchyAddPopover();
+    });
+
+    document.getElementById("popoverCreateHierarchy").addEventListener("click", () => {
+      closeHierarchyAddPopover();
+      goToHierarchyWizard();
+    });
+
+    document.getElementById("popoverQuickSetup").addEventListener("click", () => {
+      closeHierarchyAddPopover();
+      goToQuickUploadWizard();
+    });
+
+    // Header search — dims tree rows that don't match, keeps the structure
+    // in place rather than collapsing/hiding branches.
+    const hierarchySearchBar = document.getElementById("hierarchySearchBar");
+    const hierarchySearchInput = document.getElementById("hierarchySearchInput");
+
+    function filterHierarchyTree(query) {
+      const q = query.trim().toLowerCase();
+      document.querySelectorAll("#hierarchyTree .planner-node").forEach(row => {
+        const label = row.querySelector(".planner-node-label");
+        const text = label ? label.textContent.toLowerCase() : "";
+        row.style.opacity = (!q || text.includes(q)) ? "1" : "0.25";
+      });
+    }
+
+    document.getElementById("btnHierarchySearch").addEventListener("click", e => {
+      e.stopPropagation();
+      hierarchySearchBar.hidden = !hierarchySearchBar.hidden;
+      if (!hierarchySearchBar.hidden) {
+        hierarchySearchInput.focus();
+      } else {
+        hierarchySearchInput.value = "";
+        filterHierarchyTree("");
+      }
+    });
+
+    document.getElementById("btnHierarchySearchClose").addEventListener("click", () => {
+      hierarchySearchBar.hidden = true;
+      hierarchySearchInput.value = "";
+      filterHierarchyTree("");
+    });
+
+    hierarchySearchInput.addEventListener("input", e => filterHierarchyTree(e.target.value));
+
+    /* =========================================
+       SETUP CHOICE MODAL
+       The single prompt every not-yet-ready view shows: create the
+       zone/level/service hierarchy, or upload a 2D/3D file — both routed
+       to the wizard's own existing steps, not duplicated in a modal here.
+       ========================================= */
+    const setupChoiceModal = document.getElementById("setupChoiceModal");
+    const setupChoiceOptions = document.getElementById("setupChoiceOptions");
+
+    function openSetupChoiceModal() {
+      setupChoiceOptions.hidden = false;
+      openModal(setupChoiceModal);
+    }
+
+    function goToHierarchyWizard() {
+      const params = new URLSearchParams();
+      const name = setupPayload.projectName || projParam || "";
+      const type = setupPayload.projectType || projectType || "";
+      if (name) params.set("project", name);
+      if (type) params.set("type", type);
+      params.set("resume", "zoneMode");
+      window.location.href = "construction_bim_workspace_setup_final.html?" + params.toString();
+    }
+
+    function goToQuickUploadWizard(preferredType) {
+      const params = new URLSearchParams();
+      const name = setupPayload.projectName || projParam || "";
+      const type = setupPayload.projectType || projectType || "";
+      if (name) params.set("project", name);
+      if (type) params.set("type", type);
+      params.set("resume", "quickUpload");
+      if (preferredType) params.set("uploadType", preferredType);
+      window.location.href = "construction_bim_workspace_setup_final.html?" + params.toString();
+    }
+
+    document.getElementById("btnChooseHierarchy").addEventListener("click", goToHierarchyWizard);
+    document.getElementById("btnChooseUpload").addEventListener("click", () => goToQuickUploadWizard());
+    document.getElementById("btnSetupChoiceClose").addEventListener("click", () => closeModal(setupChoiceModal));
+
+    // Zoom
+    let zoomLevel = 1;
+    const mapViewport = document.getElementById("mapViewport");
+    document.getElementById("btnZoomIn").addEventListener("click", () => {
+      zoomLevel = Math.min(zoomLevel + 0.2, 2.2);
+      mapViewport.style.transform = `scale(${zoomLevel})`;
+    });
+    document.getElementById("btnZoomOut").addEventListener("click", () => {
+      zoomLevel = Math.max(zoomLevel - 0.2, 0.8);
+      mapViewport.style.transform = `scale(${zoomLevel})`;
+    });
+    document.getElementById("btnZoomReset").addEventListener("click", () => {
+      zoomLevel = 1;
+      mapViewport.style.transformOrigin = "center center";
+      mapViewport.style.transform = `scale(1)`;
+    });
+
+
+    /* =========================================
+       3D THREE.JS VIEWER (Clean Light Scene)
+       ========================================= */
+    function initThreeD() {
+      const container = document.getElementById("threeDContainer");
+      if (!container) return;
+
+      const w = container.clientWidth || 800;
+      const h = container.clientHeight || 600;
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0xf8fafc); // Light background
+
+      const camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 1000);
+      camera.position.set(55, 40, 65);
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(w, h);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.shadowMap.enabled = true;
+      container.appendChild(renderer.domElement);
+
+      const controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.target.set(0, 14, 0);
+
+      // Light ambient & directional
+      scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+      const sun = new THREE.DirectionalLight(0xffffff, 0.6);
+      sun.position.set(40, 70, 30);
+      sun.castShadow = true;
+      scene.add(sun);
+
+      // Soft light grid
+      const grid = new THREE.GridHelper(120, 30, 0x94a3b8, 0xe2e8f0);
+      scene.add(grid);
+
+      // Procedural Light BIM Building
+      const bldg = new THREE.Group();
+      const floorCount = 10;
+      const slabMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 });
+      const glassMat = new THREE.MeshPhysicalMaterial({ color: 0x93c5fd, transparent: true, opacity: 0.35, roughness: 0.1 });
+      const coreMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.6 });
+
+      const core = new THREE.Mesh(new THREE.BoxGeometry(8, floorCount * 2.8, 8), coreMat);
+      core.position.y = (floorCount * 2.8) / 2;
+      bldg.add(core);
+
+      for (let i = 0; i < floorCount; i++) {
+        const y = i * 2.8;
+        const slab = new THREE.Mesh(new THREE.BoxGeometry(22, 0.35, 22), slabMat);
+        slab.position.y = y;
+        bldg.add(slab);
+
+        if (i < floorCount - 1) {
+          const glass = new THREE.Mesh(new THREE.BoxGeometry(21.8, 2.4, 21.8), glassMat);
+          glass.position.y = y + 1.4;
+          bldg.add(glass);
+        }
+      }
+      scene.add(bldg);
+
+      function render() {
+        requestAnimationFrame(render);
+        controls.update();
+        renderer.render(scene, camera);
+      }
+      render();
+
+      window.onThreeResize = () => {
+        if (!container || !renderer || !camera) return;
+        const width = container.clientWidth;
+        const height = container.clientHeight;
+        if (!width || !height) return;
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+        renderer.setSize(width, height);
+      };
+
+      window.addEventListener("resize", window.onThreeResize);
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      setTimeout(initThreeD, 100);
+    });
+
+    // Reflects whatever is in liveFiles into the 2D/3D viewers — called at
+    // boot, and again whenever the in-app upload flow adds a new file.
+    function applyDrawingSheetImage() {
+      const file2D = getActive2DFile();
+      const drawingImage = document.getElementById("drawingSheetImage");
+      const drawingSvg = document.getElementById("drawingSheetSvg");
+      if (!drawingImage || !drawingSvg) return;
+      if (file2D && file2D.dataUrl) {
+        drawingImage.src = file2D.dataUrl;
+        drawingImage.style.display = "block";
+        drawingSvg.style.display = "none";
+      } else {
+        drawingImage.style.display = "none";
+        drawingSvg.style.display = "block";
+      }
+    }
+
+    function updateThreeDFileLabel() {
+      const file3D = getActive3DFile();
+      const titleEl = document.getElementById("threeDOverlayTitle");
+      const subEl = document.getElementById("threeDOverlaySub");
+      if (!titleEl) return;
+      if (file3D) {
+        titleEl.textContent = file3D.name;
+        if (subEl) subEl.textContent = "• Uploaded model";
+      } else {
+        titleEl.textContent = "BIM 3D Model";
+        if (subEl) subEl.textContent = "• 12 Floors • Architectural & Structural";
+      }
+    }
+
+    // Clicking the drawing or the model opens Layer Hierarchy and highlights
+    // that file's node — whether or not a real file was uploaded for it.
+    const drawingImageEl = document.getElementById("drawingSheetImage");
+    if (drawingImageEl) drawingImageEl.addEventListener("click", () => openHierarchyDrawerForFile("2D Drawing"));
+    const drawingSvgEl = document.getElementById("drawingSheetSvg");
+    if (drawingSvgEl) { drawingSvgEl.style.cursor = "pointer"; drawingSvgEl.addEventListener("click", () => openHierarchyDrawerForFile("2D Drawing")); }
+    const threeDViewWrap = document.getElementById("threeDViewWrap");
+    if (threeDViewWrap) threeDViewWrap.addEventListener("click", () => openHierarchyDrawerForFile("3D BIM Model"));
+
+    applyDrawingSheetImage();
+    updateThreeDFileLabel();
+
+    // Reflect whatever setup already exists (from a prior session) right
+    // away — without this, a fully-set-up project reopened fresh would
+    // show the Project Planner icon as disabled until some other action
+    // (saving/clearing the boundary, uploading a file) happened to call
+    // updateTabLocks() again.
+    updateTabLocks();
+
+    // What the user sees first depends on how far along the project is:
+    // an uploaded file takes them straight to its viewer; a hierarchy with
+    // no file yet still invites them to mark the site on the map; and a
+    // project with neither offers the two setup paths right away.
+    if (has2DFile()) {
+      switchToTab("tab2D");
+      locationModal.classList.add("hidden");
+      maybeShowViewWelcome("tab2D");
+    } else if (has3DFile()) {
+      switchToTab("tab3D");
+      locationModal.classList.add("hidden");
+      maybeShowViewWelcome("tab3D");
+    } else if (liveHasHierarchy) {
+      openModal(locationModal);
+    } else {
+      locationModal.classList.add("hidden");
+      openSetupChoiceModal("tabMap");
+    }
+  </script>
+</body>
+</html>

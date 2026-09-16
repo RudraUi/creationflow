@@ -1,0 +1,3292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Construction / BIM Workspace Setup</title>
+
+  <!-- Lucide icons -->
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+
+  <style>
+    @font-face{
+      font-family:"Mona Sans";
+      src:url("https://cdn.jsdelivr.net/npm/@fontsource-variable/mona-sans/files/mona-sans-latin-wght-normal.woff2") format("woff2");
+      font-weight:200 900;
+      font-style:normal;
+      font-display:swap;
+    }
+
+    :root{
+      --bg:#ffffff;
+      --ink:#10182b;
+      --muted:#64748b;
+      --muted-2:#91a0b5;
+      --line:#dbe5f2;
+      --line-2:#eaf0f7;
+      --soft:#f7fafe;
+      --soft-blue:#eef5ff;
+      --blue:#2468f2;
+      --blue-2:#1557df;
+      --danger:#fb4d6b;
+      --shadow:0 18px 48px rgba(31, 85, 170, .08);
+      --shadow-blue:0 12px 28px rgba(36,104,242,.23);
+      --radius:18px;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:"Mona Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at 10% 90%, rgba(255,112,112,.05), transparent 22%),
+        radial-gradient(circle at 92% 88%, rgba(36,104,242,.05), transparent 24%),
+        var(--bg);
+      color:var(--ink);
+      overflow-x:hidden;
+    }
+
+    button,input{font:inherit}
+    button{cursor:pointer}
+    svg{display:block}
+
+    .app{
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+    }
+
+    .topbar{
+      height:68px;
+      display:flex;
+      align-items:center;
+      justify-content:flex-end;
+      padding:0 34px;
+      position:relative;
+      z-index:20;
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-size:14px;
+      font-weight:700;
+      letter-spacing:.01em;
+      color:#24324a;
+    }
+
+    .brand-mark{
+      width:31px;height:31px;border-radius:10px;
+      background:var(--blue);
+      color:white;
+      display:grid;place-items:center;
+      box-shadow:0 8px 20px rgba(36,104,242,.2);
+    }
+
+    .close{
+      width:36px;height:36px;border-radius:50%;
+      border:1px solid var(--line);
+      background:#fff;
+      color:#718096;
+      display:grid;place-items:center;
+      transition:.2s ease;
+    }
+    .close:hover{border-color:#bfd0e5;color:var(--ink)}
+
+    .shell{
+      flex:1;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:20px 30px 42px;
+    }
+
+    .stage{
+      position:relative;
+      width:min(1180px,100%);
+      min-height:690px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .screen{
+      position:absolute;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      opacity:0;
+      pointer-events:none;
+      transform:translateY(24px) scale(.992);
+      transition:
+        opacity .42s ease,
+        transform .48s cubic-bezier(.22,.8,.2,1);
+      will-change:opacity,transform;
+    }
+
+    .screen.active{
+      opacity:1;
+      pointer-events:auto;
+      transform:translateY(0) scale(1);
+    }
+
+    .screen.exit-left{
+      opacity:0;
+      transform:translateY(-20px) scale(.994);
+    }
+
+    @media(prefers-reduced-motion:reduce){
+      .screen{
+        transform:none;
+        transition:opacity .16s linear;
+      }
+      .screen.exit-left{transform:none}
+    }
+
+    .screen-inner{
+      width:min(900px,100%);
+      margin:auto;
+    }
+
+    .center{text-align:center}
+
+    h1,h2,h3,p{margin:0}
+
+    h1{
+      font-size:clamp(44px,6vw,76px);
+      line-height:.96;
+      letter-spacing:-.06em;
+      font-weight:760;
+    }
+
+    h2{
+      font-size:clamp(30px,4vw,47px);
+      line-height:1.05;
+      letter-spacing:-.045em;
+      font-weight:740;
+    }
+
+    h3{
+      font-size:23px;
+      line-height:1.16;
+      letter-spacing:-.025em;
+      font-weight:700;
+    }
+
+    .screen:not([data-step="intro"]) h2{
+      font-weight:560;
+    }
+
+    .screen:not([data-step="intro"]) h3{
+      font-weight:560;
+    }
+
+    .screen[data-step="startMode"] h2{
+      font-size:clamp(27px,3.2vw,38px);
+    }
+
+    .sub{
+      color:var(--muted);
+      font-size:15px;
+      line-height:1.55;
+      margin-top:10px;
+    }
+
+    .small-sub{
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.5;
+    }
+
+    .eyebrow{
+      color:#8595ad;
+      font-size:11px;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      font-weight:800;
+      margin-bottom:6px;
+    }
+
+    .primary{
+      border:0;
+      background:var(--blue);
+      color:#fff;
+      border-radius:999px;
+      padding:10px 19px;
+      font-size:13px;
+      font-weight:600;
+      box-shadow:var(--shadow-blue);
+      transition:.2s ease;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:9px;
+    }
+    .primary:hover{background:var(--blue-2);transform:translateY(-1px)}
+    .primary:active{transform:translateY(0) scale(.985)}
+    .primary:disabled{
+      cursor:not-allowed;
+      background:#d9e1ec;
+      color:#94a3b8;
+      box-shadow:none;
+      transform:none;
+    }
+
+    .secondary{
+      border:1px solid var(--line);
+      background:#fff;
+      color:#475569;
+      border-radius:999px;
+      padding:9px 16px;
+      font-size:13px;
+      font-weight:580;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      transition:.2s ease;
+    }
+    .secondary:hover{background:#fbfdff;border-color:#bfd1e8}
+    .secondary:disabled{
+      cursor:not-allowed;
+      color:#9aa8ba;
+      border-color:#e3e9f1;
+      background:#f4f6f9;
+    }
+
+    .ghost{
+      border:0;
+      background:transparent;
+      color:#64748b;
+      font-size:13px;
+      font-weight:560;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:9px 14px;
+      border-radius:10px;
+      transition:.2s ease;
+      cursor:pointer;
+    }
+    .ghost:hover{
+      color:var(--ink);
+      background:rgba(15,23,42,.04);
+    }
+    .ghost svg{
+      width:16px;
+      height:16px;
+      stroke-width:2;
+      transition:.2s ease;
+    }
+    .ghost:hover svg{
+      transform:translateX(-2px);
+    }
+
+    /* Intro */
+    .hero{
+      width:min(980px,100%);
+      display:grid;
+      grid-template-columns:1.1fr .9fr;
+      gap:68px;
+      align-items:center;
+    }
+
+    .hero .accent{
+      color:var(--blue);
+      font-weight:360;
+    }
+
+    .hero-copy .sub{max-width:550px}
+    .hero-copy .primary{margin-top:26px}
+
+    .compare{
+      border:1px solid var(--line);
+      border-radius:18px;
+      overflow:hidden;
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      background:#fff;
+      box-shadow:var(--shadow);
+    }
+
+    .compare-col{padding:20px}
+    .compare-col.highlight{
+      background:#f2f7ff;
+      border-left:1px solid #cfddf3;
+    }
+
+    .compare-title{
+      font-size:14px;
+      font-weight:750;
+      margin-bottom:18px;
+    }
+
+    .compare-title small{
+      display:block;
+      color:#8fa0b6;
+      font-size:10px;
+      font-weight:500;
+      margin-top:3px;
+    }
+
+    .compare-row{
+      display:flex;
+      align-items:flex-start;
+      gap:9px;
+      font-size:12px;
+      color:#475569;
+      line-height:1.45;
+      margin:13px 0;
+    }
+
+    .yes,.no{
+      width:18px;height:18px;border-radius:50%;
+      display:grid;place-items:center;
+      color:#fff;
+      flex:0 0 auto;
+      font-size:11px;
+      margin-top:1px;
+    }
+    .yes{background:var(--blue)}
+    .no{background:var(--danger)}
+
+    .recommended{
+      float:right;
+      margin-top:-20px;
+      margin-right:-20px;
+      background:var(--blue);
+      color:#fff;
+      font-size:8px;
+      letter-spacing:.07em;
+      padding:5px 9px;
+      border-radius:0 0 0 8px;
+    }
+
+    /* Project type */
+    .project-grid{
+      max-width:820px;
+      margin:30px auto 0;
+      display:grid;
+      grid-template-columns:repeat(5,1fr);
+      gap:38px 24px;
+    }
+
+    .project-card{
+      border:0;
+      background:transparent;
+      color:var(--ink);
+      text-align:center;
+      padding:0;
+    }
+
+    .icon-circle{
+      width:60px;height:60px;border-radius:50%;
+      background:var(--soft-blue);
+      color:var(--blue);
+      display:grid;
+      place-items:center;
+      margin:0 auto 12px;
+      border:1px solid transparent;
+      transition:.2s ease;
+    }
+
+    .icon-circle svg{width:23px;height:23px;stroke-width:1.9}
+    .project-card span{font-size:13px;color:#37475f}
+
+    .project-card:hover .icon-circle{
+      transform:translateY(-2px);
+      border-color:#c7daf7;
+      background:#e8f1ff;
+    }
+
+    .project-card.selected .icon-circle{
+      background:var(--blue);
+      color:#fff;
+      box-shadow:0 10px 24px rgba(36,104,242,.18);
+    }
+
+    .project-card.selected span{
+      color:var(--blue);
+      font-weight:700;
+    }
+
+    /* Name workspace */
+    .name-wrap{
+      width:min(650px,96%);
+      margin:0 auto;
+    }
+
+    .name-example{
+      color:#657894;
+      font-size:16px;
+      margin-top:12px;
+    }
+
+    .name-field{
+      margin-top:40px;
+      height:64px;
+      width:100%;
+      border-radius:999px;
+      border:1px solid #d6e0ec;
+      background:#f8fbff;
+      display:flex;
+      align-items:center;
+      padding:6px 7px 6px 23px;
+      transition:.2s ease;
+    }
+
+    .name-field:focus-within{
+      border-color:#9ec0ff;
+      box-shadow:0 0 0 4px rgba(36,104,242,.07);
+      background:#fff;
+    }
+
+    .name-field input{
+      flex:1;
+      min-width:0;
+      border:0;
+      outline:0;
+      background:transparent;
+      color:var(--ink);
+      font-size:17px;
+      font-weight:500;
+    }
+
+    .name-field-icon{
+      color:#8a9ab0;
+      flex:0 0 auto;
+      margin-right:11px;
+    }
+
+    .name-field-icon svg{
+      width:18px;
+      height:18px;
+      stroke-width:1.8;
+    }
+
+    .name-field:focus-within .name-field-icon{color:var(--blue)}
+
+    .name-arrow{
+      width:48px;height:48px;border-radius:50%;
+      border:0;
+      background:var(--blue);
+      color:#fff;
+      display:grid;place-items:center;
+      flex:0 0 auto;
+      box-shadow:0 8px 20px rgba(36,104,242,.2);
+      transition:.2s ease;
+    }
+
+    .name-arrow svg{width:18px;height:18px;stroke-width:2}
+    .name-arrow:hover{background:var(--blue-2);transform:translateX(1px)}
+
+    .name-back{
+      margin-top:16px;
+      display:flex;
+      justify-content:center;
+    }
+
+    /* Choice screens */
+    .choice-wrap{
+      width:min(720px,96%);
+      margin:0 auto;
+      text-align:center;
+    }
+
+    .choice-grid{
+      margin:42px auto 0;
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      gap:16px;
+      max-width:640px;
+    }
+
+    .choice-card{
+      min-height:126px;
+      text-align:left;
+      border:1px solid #d7e2ef;
+      background:#fff;
+      border-radius:20px;
+      padding:17px 20px;
+      color:var(--ink);
+      transition:.2s ease;
+      position:relative;
+    }
+
+    .choice-card:hover{
+      transform:translateY(-2px);
+      border-color:#bfd3f1;
+      box-shadow:0 12px 26px rgba(30,70,140,.06);
+    }
+
+    .choice-card.selected{
+      border-color:#80aaff;
+      background:#f8fbff;
+      box-shadow:0 0 0 3px rgba(36,104,242,.05);
+    }
+
+    .choice-title{
+      font-size:17px;
+      font-weight:720;
+      letter-spacing:-.02em;
+      margin-bottom:5px;
+    }
+
+    .choice-desc{
+      font-size:14px;
+      line-height:1.45;
+      color:#5f718c;
+      max-width:240px;
+    }
+
+    .choice-card .choice-check{
+      position:absolute;
+      top:10px;right:10px;
+      width:18px;height:18px;
+      border-radius:50%;
+      border:0;
+      display:grid;place-items:center;
+      color:#fff;
+      background:var(--blue);
+      opacity:0;
+      transform:scale(.75);
+      transition:.18s ease;
+    }
+
+    .choice-card.selected .choice-check{
+      opacity:1;
+      transform:scale(1);
+    }
+
+    .choice-check svg{width:11px;height:11px;stroke-width:3}
+
+    .choice-icon{
+      width:36px;
+      height:36px;
+      border-radius:10px;
+      background:var(--soft-blue);
+      color:var(--blue);
+      display:grid;
+      place-items:center;
+      margin-bottom:10px;
+      border:1px solid #d8e5f7;
+      transition:.2s ease;
+    }
+
+    .choice-icon svg{
+      width:18px;
+      height:18px;
+      stroke-width:1.9;
+    }
+
+    .choice-card:hover .choice-icon{
+      background:#e2eeff;
+      border-color:#bbd5f7;
+      transform:translateY(-1px);
+    }
+
+    .choice-card.selected .choice-icon{
+      background:var(--blue);
+      color:#fff;
+      border-color:var(--blue);
+      box-shadow:0 8px 18px rgba(36,104,242,.22);
+    }
+
+    .choice-actions{
+      margin-top:40px;
+      display:flex;
+      justify-content:center;
+      gap:12px;
+    }
+
+    /* Quick upload */
+    .upload-wrap{
+      width:min(720px,96%);
+      margin:auto;
+      text-align:center;
+    }
+
+    .upload-options{
+      margin:32px auto 0;
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:42px;
+      max-width:420px;
+    }
+
+    .upload-type-stage{
+      animation:uploadStageIn .35s ease both;
+    }
+
+    .upload-type-stage.leaving{
+      animation:uploadStageOut .22s ease both;
+      pointer-events:none;
+    }
+
+    .upload-type-stage.hidden{display:none}
+
+    .upload-type-back{margin-top:24px}
+
+    .upload-file-stage{
+      display:none;
+      margin-top:28px;
+    }
+
+    .upload-file-stage.show{
+      display:block;
+      animation:uploadAreaIn .5s cubic-bezier(.22,.8,.2,1) both;
+    }
+
+    @keyframes uploadStageIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+    @keyframes uploadStageOut{to{opacity:0;transform:translateY(-12px) scale(.98)}}
+    @keyframes uploadAreaIn{
+      from{opacity:0;transform:translateY(22px) scale(.965)}
+      to{opacity:1;transform:translateY(0) scale(1)}
+    }
+
+    .upload-type{
+      border:0;
+      background:transparent;
+      border-radius:14px;
+      padding:8px;
+      text-align:center;
+      transition:.2s ease;
+      position:relative;
+    }
+
+    .upload-type:hover{
+      transform:translateY(-1px);
+    }
+
+    .upload-type.active{
+      background:transparent;
+      box-shadow:none;
+    }
+
+    .upload-type-head{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:8px;
+      margin-bottom:5px;
+    }
+
+    .upload-ico{
+      width:48px;height:48px;border-radius:50%;
+      display:grid;place-items:center;
+      color:var(--blue);
+      background:var(--soft-blue);
+    }
+
+    .upload-ico svg{width:21px;height:21px}
+    .upload-type-title{font-size:14px;font-weight:600}
+    .upload-type-desc{font-size:11px;color:var(--muted);line-height:1.45}
+
+    .upload-type.active .upload-ico{
+      background:var(--blue);
+      color:#fff;
+      box-shadow:0 8px 20px rgba(36,104,242,.2);
+    }
+
+    .project-name-inline{color:var(--blue)}
+
+    .dropzone{
+      margin:0 auto;
+      max-width:600px;
+      min-height:150px;
+      border:1.5px dashed #c7d6e8;
+      border-radius:18px;
+      background:#fbfdff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+      transition:.2s ease;
+    }
+
+    .dropzone.drag{
+      border-color:var(--blue);
+      background:#f5f9ff;
+    }
+
+    .dropzone-content{
+      text-align:center;
+    }
+
+    .dropzone-content .upload-main-icon{
+      width:44px;height:44px;border-radius:13px;
+      background:#eef5ff;color:var(--blue);
+      display:grid;place-items:center;
+      margin:0 auto 12px;
+    }
+
+    .dropzone-content .upload-main-icon svg{width:21px;height:21px}
+    .dropzone-title{font-size:14px;font-weight:700}
+    .dropzone-copy{font-size:12px;color:var(--muted);margin-top:5px}
+    .file-input{display:none}
+
+    .file-chip{
+      margin:14px auto 0;
+      max-width:600px;
+      border:1px solid var(--line-2);
+      background:#fff;
+      border-radius:14px;
+      padding:12px 14px;
+      display:none;
+      align-items:center;
+      gap:12px;
+      text-align:left;
+    }
+
+    .file-chip.show{display:flex}
+
+    .file-chip-icon{
+      width:34px;height:34px;border-radius:10px;
+      background:#eef5ff;
+      color:var(--blue);
+      display:grid;place-items:center;
+      flex:0 0 auto;
+    }
+
+    .file-chip-icon svg{width:17px;height:17px}
+    .file-chip-meta{min-width:0;flex:1}
+    .file-chip-name{
+      font-size:13px;
+      font-weight:700;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .file-chip-size{font-size:11px;color:var(--muted);margin-top:2px}
+    .remove-file{
+      border:0;background:transparent;color:#91a0b4;display:grid;place-items:center;
+    }
+    .remove-file svg{width:17px;height:17px}
+
+    /* Counts / hierarchy */
+    .count-wrap{
+      width:min(600px,96%);
+      text-align:center;
+      margin:auto;
+    }
+
+    .count-control{
+      margin:34px auto 0;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+    }
+
+    .counter{
+      position:relative;
+      width:min(340px,100%);
+      height:58px;
+      border:1px solid var(--line);
+      border-radius:16px;
+      background:#f8fbff;
+      display:flex;
+      align-items:center;
+      padding:0 10px 0 17px;
+      gap:12px;
+      transition:.2s ease;
+    }
+
+    .counter:hover{
+      border-color:#bfd1ea;
+      background:#fff;
+    }
+
+    .counter > div:first-child{flex:1;text-align:left}
+
+    .counter-label{
+      position:absolute;
+      top:-8px;
+      left:15px;
+      padding:0 7px;
+      background:#fff;
+      font-size:11px;
+      color:#8797ad;
+      display:block;
+      text-align:left;
+    }
+
+    .counter-value{
+      font-size:25px;
+      font-weight:550;
+      margin-right:auto;
+      display:block;
+      text-align:left;
+    }
+
+    .spin{
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+      padding:3px;
+      border-radius:10px;
+      background:#eef4fd;
+    }
+
+    .spin button{
+      border:0;
+      background:transparent;
+      color:var(--blue);
+      width:24px;height:20px;
+      padding:0;
+      border-radius:7px;
+      display:grid;
+      place-items:center;
+    }
+
+    .spin button:hover{background:#fff}
+    .spin button svg{width:13px;height:13px;stroke-width:2.2}
+
+    .hierarchy-layout{
+      width:min(980px,100%);
+      display:grid;
+      grid-template-columns:215px 1fr;
+      gap:28px;
+      align-items:start;
+      height:520px;
+    }
+
+    .tree{
+      background:#f5f9fe;
+      border:1px solid #eaf0f7;
+      border-radius:18px;
+      padding:14px 10px 14px 14px;
+      height:100%;
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+    }
+
+    .tree-head{
+      padding:4px 4px 10px;
+      font-size:12px;
+      font-weight:750;
+      color:#5c6f89;
+      display:flex;
+      align-items:center;
+      gap:7px;
+      flex:0 0 auto;
+    }
+
+    .tree-head svg{width:13px;height:13px}
+
+    .tree-scroll{
+      overflow-y:auto;
+      overflow-x:hidden;
+      padding-right:4px;
+      scrollbar-width:thin;
+      scrollbar-color:#cbd7e6 transparent;
+    }
+
+    .tree-scroll::-webkit-scrollbar{width:6px}
+    .tree-scroll::-webkit-scrollbar-track{background:transparent}
+    .tree-scroll::-webkit-scrollbar-thumb{
+      background:#cbd7e6;border-radius:99px;
+    }
+
+    .tree-zone{
+      border-radius:10px;
+      padding:8px 10px;
+      margin:2px 0;
+      color:#5f718a;
+      font-size:12px;
+      cursor:pointer;
+      transition:.17s ease;
+      display:flex;
+      align-items:center;
+      gap:7px;
+    }
+
+    .tree-zone svg{width:13px;height:13px}
+    .tree-chevron{
+      width:22px;height:22px;
+      margin-left:auto;
+      padding:0;
+      border:0;
+      border-radius:7px;
+      background:transparent;
+      color:#8ca0b9;
+      display:grid;
+      place-items:center;
+    }
+
+    .tree-chevron:hover{background:#edf3fb;color:var(--blue)}
+    .tree-chevron svg{width:13px;height:13px;transition:transform .2s ease}
+    .tree-zone.collapsed .tree-chevron svg{transform:rotate(-90deg)}
+    .tree-zone.active{
+      background:transparent;
+      color:var(--blue);
+      box-shadow:none;
+      font-weight:700;
+    }
+
+    .tree-level{
+      position:relative;
+      padding:6px 10px 6px 29px;
+      font-size:11px;
+      color:#62748d;
+      cursor:pointer;
+      border-radius:8px;
+      margin:0 0 0 15px;
+      display:flex;
+      align-items:center;
+      gap:6px;
+    }
+
+    .tree-level::before{
+      content:"";
+      position:absolute;
+      left:7px;
+      top:-1px;
+      bottom:-1px;
+      border-left:1px solid #d5e0ed;
+    }
+
+    .tree-level::after{
+      content:"";
+      position:absolute;
+      left:7px;
+      top:50%;
+      width:12px;
+      border-top:1px solid #d5e0ed;
+    }
+
+    .tree-level.active{
+      color:var(--blue);
+      background:transparent;
+      font-weight:700;
+    }
+
+    .tree-level-name{min-width:0;flex:1}
+
+    .tree-level-delete{
+      width:22px;height:22px;
+      padding:0;
+      border:0;
+      border-radius:7px;
+      background:transparent;
+      color:#a8b4c4;
+      display:grid;
+      place-items:center;
+      opacity:.55;
+      transition:.16s ease;
+    }
+
+    .tree-level:hover .tree-level-delete,
+    .tree-level-delete:focus-visible{opacity:1}
+    .tree-level-delete:hover{background:#fff0f2;color:#e34d65}
+    .tree-level-delete svg{width:12px;height:12px;stroke-width:2}
+
+    .tree-service{
+      position:relative;
+      margin-left:36px;
+      padding:3px 8px 3px 20px;
+      color:#64748b;
+      font-size:11px;
+      display:flex;
+      align-items:center;
+      gap:6px;
+      border-radius:6px;
+      transition:.15s ease;
+      cursor:pointer;
+    }
+
+    .tree-service:hover{
+      color:var(--ink);
+      background:rgba(36,104,242,.04);
+    }
+
+    .tree-service.active{
+      color:var(--blue);
+      font-weight:600;
+    }
+
+    .tree-service::before{
+      content:"";
+      position:absolute;
+      left:6px;
+      top:-1px;
+      bottom:-1px;
+      border-left:1px solid #dce5f0;
+    }
+
+    .tree-service::after{
+      content:"";
+      position:absolute;
+      left:6px;
+      top:50%;
+      width:10px;
+      border-top:1px solid #dce5f0;
+    }
+
+    .tree-service svg{width:12px;height:12px;color:var(--blue);stroke-width:2;flex-shrink:0}
+
+    .tree-empty{
+      font-size:10px;
+      color:#9dacbf;
+      padding:4px 10px 8px 33px;
+    }
+
+    .panel{
+      height:100%;
+      position:relative;
+      padding:4px 2px 78px 0;
+      overflow:hidden;
+    }
+
+    .panel > :not(.panel-actions){
+      transition:opacity .28s ease,transform .34s cubic-bezier(.22,.8,.2,1);
+    }
+
+    .panel.zone-switching > :not(.panel-actions){
+      opacity:0;
+      transform:translateY(-12px);
+    }
+
+    .level-mode{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(190px,1fr));
+      gap:10px;
+      margin-top:22px;
+      max-width:520px;
+    }
+
+    .pill{
+      border:1px solid var(--line);
+      background:#fff;
+      color:#4f6077;
+      border-radius:14px;
+      padding:13px 14px;
+      font-size:13px;
+      font-weight:560;
+      transition:.18s ease;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      text-align:left;
+    }
+
+    .pill svg{width:18px;height:18px;color:var(--blue);stroke-width:1.8}
+
+    .pill.active{
+      border-color:#94b8ff;
+      color:var(--blue);
+      background:#f7fbff;
+    }
+
+    .level-builder{
+      margin-top:20px;
+      display:flex;
+      align-items:flex-end;
+      gap:12px;
+      max-width:520px;
+    }
+
+    .level-field-card{
+      padding:0;
+      border:0;
+      background:transparent;
+      flex:1;
+    }
+
+    .level-field-head{
+      display:flex;
+      align-items:center;
+      gap:7px;
+      margin-bottom:8px;
+    }
+
+    .level-symbol{
+      width:31px;
+      height:31px;
+      border-radius:10px;
+      background:#eef5ff;
+      color:var(--blue);
+      display:grid;
+      place-items:center;
+      flex:0 0 auto;
+      font-size:12px;
+      font-weight:650;
+    }
+
+    .level-symbol.ground{
+      width:42px;
+      height:42px;
+      border-radius:12px;
+      font-size:15px;
+      font-weight:700;
+      letter-spacing:-.04em;
+      background:var(--blue);
+      color:#fff;
+      display:grid;
+      place-items:center;
+      flex:0 0 auto;
+      align-self:center;
+      margin-bottom:0;
+    }
+
+    .field-label{
+      color:#7e90aa;
+      font-size:11px;
+      margin-bottom:0;
+      text-align:left;
+    }
+
+    .mini-field{
+      height:46px;
+      border:1px solid #e2eaf5;
+      border-radius:12px;
+      background:#f8faff;
+      display:flex;
+      align-items:center;
+      padding:0 6px 0 14px;
+      gap:0;
+    }
+
+    .mini-field input{
+      width:100%;
+      border:0;
+      outline:0;
+      background:transparent;
+      font-size:15px;
+      font-weight:600;
+      color:var(--ink);
+      -moz-appearance:textfield;
+    }
+
+    .mini-field input::-webkit-outer-spin-button,
+    .mini-field input::-webkit-inner-spin-button{
+      -webkit-appearance:none;
+      margin:0;
+    }
+
+    .stepper{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:0;
+      flex:0 0 auto;
+    }
+
+    .stepper button{
+      background:transparent;
+      border:0;
+      padding:2px 6px;
+      color:var(--blue);
+      cursor:pointer;
+      line-height:1;
+      transition:.15s ease;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .stepper button:hover{
+      color:#1a4fca;
+    }
+
+    .stepper button svg{
+      width:14px;
+      height:14px;
+      stroke-width:2.4;
+    }
+
+    .ground-badge-wrap{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex:0 0 auto;
+      align-self:flex-end;
+      margin-bottom:2px;
+      margin-right:-8px;
+    }
+
+    .ground-static{
+      display:none;
+    }
+
+    .panel-actions{
+      position:absolute;
+      right:0;
+      bottom:0;
+      display:flex;
+      gap:10px;
+    }
+
+    .create-levels-action{
+      margin-top:14px;
+      border-color:#c9d8eb;
+      color:var(--blue);
+      background:#f7faff;
+    }
+
+    .level-create-row{
+      display:flex;
+      align-items:center;
+      gap:14px;
+      margin-top:14px;
+    }
+
+    .level-create-row .create-levels-action{
+      margin-top:0;
+    }
+
+    /* Services */
+    .service-head{
+      display:flex;
+      align-items:flex-start;
+      gap:14px;
+      max-width:650px;
+    }
+
+    .apply-link{
+      margin-left:auto;
+      border:0;
+      background:transparent;
+      color:var(--blue);
+      font-size:13px;
+      font-weight:600;
+      padding:6px 10px;
+      border-radius:8px;
+      cursor:pointer;
+      transition:.18s ease;
+    }
+    .apply-link:hover{
+      background:#edf4ff;
+      color:var(--blue-2);
+    }
+
+    .service-grid{
+      margin-top:18px;
+      display:grid;
+      grid-template-columns:repeat(3,minmax(155px,1fr));
+      gap:10px;
+      max-width:640px;
+    }
+
+    .custom-service{
+      min-height:42px;
+      border:1px solid var(--line);
+      border-radius:999px;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding:4px 5px 4px 13px;
+      background:#fff;
+    }
+
+    .custom-service input{
+      min-width:0;
+      flex:1;
+      border:0;
+      outline:0;
+      background:transparent;
+      color:var(--ink);
+      font-size:13px;
+    }
+
+    .custom-service button{
+      width:30px;height:30px;
+      flex:0 0 auto;
+      border:0;
+      border-radius:50%;
+      background:var(--blue);
+      color:#fff;
+      display:grid;
+      place-items:center;
+    }
+
+    .custom-service button svg{width:15px;height:15px;stroke-width:2.4}
+
+    .service{
+      border:1px solid var(--line);
+      background:#fff;
+      color:#576a83;
+      border-radius:999px;
+      min-height:42px;
+      padding:9px 13px;
+      display:flex;
+      align-items:center;
+      gap:9px;
+      font-size:13px;
+      transition:.18s ease;
+    }
+
+    .service-icon{
+      width:24px;height:24px;border-radius:8px;
+      background:#eef5ff;
+      color:var(--blue);
+      display:grid;place-items:center;
+      flex:0 0 auto;
+    }
+
+    .service-icon svg{width:13px;height:13px;stroke-width:2}
+
+    .service.active{
+      color:var(--blue);
+      border-color:#9abaff;
+      background:#f8fbff;
+    }
+
+    .service.active .service-icon{
+      background:var(--blue);
+      color:#fff;
+    }
+
+    /* Teams */
+    .team-grid{
+      max-width:620px;
+      margin:24px auto 0;
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:10px;
+    }
+
+    .team{
+      position:relative;
+      min-height:100px;
+      border:0;
+      background:#fafcff;
+      border-radius:15px;
+      text-align:center;
+      padding:12px 10px;
+      transition:.2s ease;
+    }
+
+    .team:hover{
+      transform:translateY(-2px);
+      box-shadow:0 12px 26px rgba(23,65,135,.06);
+    }
+
+    .team.active{
+      background:#f1f6ff;
+    }
+
+    .team.active::after{
+      content:"✓";
+      position:absolute;
+      top:10px;
+      right:10px;
+      width:18px;
+      height:18px;
+      border-radius:50%;
+      background:var(--blue);
+      color:#fff;
+      display:grid;
+      place-items:center;
+      font-size:11px;
+      font-weight:800;
+      line-height:1;
+    }
+
+    .team-ico{
+      width:34px;height:34px;border-radius:10px;
+      background:#eef5ff;
+      color:var(--blue);
+      display:grid;place-items:center;
+      margin:0 auto 7px;
+    }
+
+    .team-ico svg{width:16px;height:16px;stroke-width:1.8}
+    .team-name{font-size:13px;font-weight:560;margin-bottom:3px}
+    .team-desc{font-size:10.5px;color:#70829b;line-height:1.4}
+
+    .button-row{
+      display:flex;
+      justify-content:center;
+      gap:10px;
+      margin-top:18px;
+    }
+
+    /* Review */
+    .review-wrap{
+      width:min(640px,94%);
+      margin:auto;
+      text-align:center;
+    }
+
+    .review-eyebrow{
+      color:#8797ab;
+      font-size:12px;
+      font-weight:600;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      margin-bottom:8px;
+    }
+
+    .review-wrap > h2{
+      font-size:clamp(24px,3vw,32px);
+      font-weight:600;
+      color:var(--ink);
+      letter-spacing:-.015em;
+      margin-bottom:6px;
+    }
+
+    .review-stats{
+      margin:30px auto 16px;
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:20px;
+      max-width:440px;
+      align-items:center;
+    }
+
+    .review-stat{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:6px;
+      text-align:center;
+    }
+
+    .stat-number{
+      font-size:clamp(26px,3vw,32px);
+      font-weight:650;
+      color:var(--blue);
+      line-height:1;
+      letter-spacing:-.02em;
+    }
+
+    .stat-label{
+      color:#64748b;
+      font-size:11px;
+      font-weight:600;
+      letter-spacing:.07em;
+      text-transform:uppercase;
+    }
+
+    .review-edit-link{
+      display:inline-block;
+      margin:12px auto 28px;
+      border:0;
+      background:transparent;
+      color:var(--blue);
+      font-size:13.5px;
+      font-weight:600;
+      cursor:pointer;
+      padding:6px 14px;
+      border-radius:8px;
+      transition:.18s ease;
+    }
+
+    .review-edit-link:hover{
+      background:#edf4ff;
+    }
+
+    .review-edit{
+      margin-top:6px;
+      display:flex;
+      justify-content:center;
+      gap:12px;
+    }
+
+    /* Creating screen — a determinate progress ring, not a generic spin */
+    .creation-spinner-wrap{
+      position:relative;
+      width:64px;
+      height:64px;
+      margin:0 auto 30px;
+      border-radius:50%;
+      animation:ringGlow 2.4s ease-in-out infinite;
+    }
+
+    .creation-spinner-wrap svg{
+      width:100%;
+      height:100%;
+      transform:rotate(-90deg);
+    }
+
+    .ring-track{
+      fill:none;
+      stroke:#edf3fb;
+      stroke-width:4;
+    }
+
+    .ring-progress{
+      fill:none;
+      stroke:var(--blue);
+      stroke-width:4;
+      stroke-linecap:round;
+      stroke-dasharray:119.4;
+      stroke-dashoffset:119.4;
+      transition:stroke-dashoffset .7s cubic-bezier(.22,.8,.2,1);
+    }
+
+    .creation-percent{
+      position:absolute;
+      inset:0;
+      z-index:1;
+      display:grid;
+      place-items:center;
+      font-size:13.5px;
+      font-weight:780;
+      color:var(--blue);
+      letter-spacing:-.02em;
+      transition:opacity .26s ease, transform .3s cubic-bezier(.22,.8,.2,1);
+    }
+
+    .creation-percent.switching{
+      opacity:0;
+      transform:scale(.82);
+    }
+
+    @keyframes ringGlow{
+      0%,100%{box-shadow:0 0 0 0 rgba(36,104,242,.16)}
+      50%{box-shadow:0 0 16px 5px rgba(36,104,242,.16)}
+    }
+
+    .creation-status{
+      min-height:1.3em;
+      font-size:clamp(21px,2.6vw,27px);
+      font-weight:660;
+      letter-spacing:-.02em;
+      color:var(--ink);
+      transition:opacity .32s ease, transform .38s cubic-bezier(.22,.8,.2,1);
+    }
+
+    .creation-status.switching{
+      opacity:0;
+      transform:translateY(7px);
+    }
+
+    @media(prefers-reduced-motion:reduce){
+      .creation-spinner-wrap{animation:none}
+      .ring-progress{transition:none}
+      .creation-status{transition:opacity .16s linear;transform:none}
+      .creation-status.switching{transform:none}
+      .creation-percent{transition:opacity .16s linear;transform:none}
+      .creation-percent.switching{transform:none}
+    }
+
+    .success{
+      width:82px;height:82px;border-radius:50%;
+      background:linear-gradient(135deg,var(--blue),var(--blue-2));
+      box-shadow:0 12px 26px rgba(36,104,242,.28);
+      display:grid;place-items:center;
+      margin:0 auto 22px;
+      animation:successPop .46s cubic-bezier(.34,1.56,.64,1) both;
+    }
+
+    @keyframes successPop{
+      0%{transform:scale(.6);opacity:0}
+      100%{transform:scale(1);opacity:1}
+    }
+
+    .success svg{width:38px;height:38px}
+    .success path{
+      stroke:#fff;stroke-width:4.5;fill:none;
+      stroke-linecap:round;stroke-linejoin:round;
+      stroke-dasharray:45;stroke-dashoffset:45;
+      animation:draw .38s .18s cubic-bezier(.65,0,.35,1) forwards;
+    }
+
+    @keyframes draw{to{stroke-dashoffset:0}}
+
+    @media(prefers-reduced-motion:reduce){
+      .success{animation:none}
+      .success path{animation:draw .3s linear forwards}
+    }
+
+    .success-file{
+      margin:18px auto 0;
+      max-width:420px;
+      border:1px solid var(--line-2);
+      border-radius:14px;
+      background:#fff;
+      padding:12px 14px;
+      display:none;
+      align-items:center;
+      gap:11px;
+      text-align:left;
+    }
+
+    .success-file.show{display:flex}
+
+    .success-file .file-chip-icon{width:32px;height:32px}
+    .success-file .file-chip-name{font-size:12px}
+
+    .toast{
+      position:fixed;
+      left:50%;
+      bottom:28px;
+      transform:translateX(-50%) translateY(12px);
+      opacity:0;
+      pointer-events:none;
+      z-index:100;
+      background:#111827;
+      color:#fff;
+      border-radius:999px;
+      padding:10px 14px;
+      font-size:12px;
+      transition:.23s ease;
+    }
+
+    .toast.show{
+      opacity:1;
+      transform:translateX(-50%) translateY(0);
+    }
+
+    @media(max-width:850px){
+      .topbar{padding:0 18px}
+      .stage{min-height:760px}
+      .hero{grid-template-columns:1fr;gap:26px}
+      .compare{display:none}
+      .project-grid{grid-template-columns:repeat(2,1fr);max-width:440px}
+      .choice-grid,.upload-options{grid-template-columns:1fr}
+      .hierarchy-layout{
+        grid-template-columns:1fr;
+        height:auto;
+      }
+      .tree{
+        height:220px;
+      }
+      .panel{
+        min-height:420px;
+      }
+      .level-builder{
+        grid-template-columns:1fr 1fr;
+      }
+      .service-grid{
+        grid-template-columns:1fr;
+      }
+      .team-grid{
+        grid-template-columns:1fr 1fr;
+      }
+      .review-stats{
+        gap:18px;
+      }
+    }
+
+    @media(max-width:560px){
+      .shell{padding:16px 18px 34px}
+      .stage{min-height:790px}
+      .team-grid{grid-template-columns:1fr}
+      .level-builder{grid-template-columns:1fr}
+      .review-stats{gap:12px;margin:28px auto 16px}
+      .stat-number{font-size:32px}
+      .stat-label{font-size:10px}
+      .review-wrap > h2{white-space:normal}
+      .choice-actions,.button-row{flex-wrap:wrap}
+    }
+  </style>
+</head>
+
+<body>
+<div class="app">
+
+  <div class="topbar">
+    <button class="close" title="Exit setup"><i data-lucide="x"></i></button>
+  </div>
+
+  <main class="shell">
+    <div class="stage">
+
+      <!-- 1. Intro -->
+      <section class="screen active" data-step="intro">
+        <div class="hero">
+          <div class="hero-copy">
+            <h1>Create your<br><span class="accent">Workspace.</span></h1>
+            <p class="sub">Set up your project structure so drawings, models, levels and teams stay organised from day one.</p>
+            <button class="primary" data-next="projectType">
+              Start setup
+              <i data-lucide="arrow-right"></i>
+            </button>
+          </div>
+
+          <div class="compare">
+            <div class="compare-col">
+              <div class="compare-title">Traditional setup<small>Manual project setup</small></div>
+              <div class="compare-row"><span class="no">×</span>Multiple setup screens</div>
+              <div class="compare-row"><span class="no">×</span>Disconnected folders and models</div>
+              <div class="compare-row"><span class="no">×</span>Repeated level and team setup</div>
+              <div class="compare-row"><span class="no">×</span>Hard to maintain structure later</div>
+            </div>
+
+            <div class="compare-col highlight">
+              <span class="recommended">RECOMMENDED</span>
+              <div class="compare-title">BIM Workspace<small>Guided setup</small></div>
+              <div class="compare-row"><span class="yes">✓</span>One guided project flow</div>
+              <div class="compare-row"><span class="yes">✓</span>Zones, levels and services together</div>
+              <div class="compare-row"><span class="yes">✓</span>Quick setup when structure can wait</div>
+              <div class="compare-row"><span class="yes">✓</span>Easy to edit after creation</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. Project Type -->
+      <section class="screen" data-step="projectType">
+        <div class="screen-inner center">
+          <h2>Select project type</h2>
+          <p class="sub">Choose the workflow that best matches this project.</p>
+
+          <div class="project-grid">
+            <button class="project-card" data-project="Pre-Construction">
+              <div class="icon-circle"><i data-lucide="clipboard-list"></i></div>
+              <span>Pre-Construction</span>
+            </button>
+
+            <button class="project-card" data-project="Construction">
+              <div class="icon-circle"><i data-lucide="hard-hat"></i></div>
+              <span>Construction</span>
+            </button>
+
+            <button class="project-card" data-project="Interior Design">
+              <div class="icon-circle"><i data-lucide="armchair"></i></div>
+              <span>Interior Design</span>
+            </button>
+
+            <button class="project-card" data-project="Scan to BIM">
+              <div class="icon-circle"><i data-lucide="scan-line"></i></div>
+              <span>Scan to BIM</span>
+            </button>
+
+            <button class="project-card" data-project="Digital Twin">
+              <div class="icon-circle"><i data-lucide="blocks"></i></div>
+              <span>Digital Twin</span>
+            </button>
+
+            <button class="project-card" data-project="Facility Management">
+              <div class="icon-circle"><i data-lucide="building-2"></i></div>
+              <span>Facility Management</span>
+            </button>
+
+            <button class="project-card" data-project="CAD to BIM">
+              <div class="icon-circle"><i data-lucide="drafting-compass"></i></div>
+              <span>CAD to BIM</span>
+            </button>
+
+            <button class="project-card" data-project="As Built">
+              <div class="icon-circle"><i data-lucide="clipboard-check"></i></div>
+              <span>As Built</span>
+            </button>
+
+            <button class="project-card" data-project="GIS">
+              <div class="icon-circle"><i data-lucide="map-pin"></i></div>
+              <span>GIS</span>
+            </button>
+
+            <button class="project-card" data-project="Field Survey">
+              <div class="icon-circle"><i data-lucide="ruler"></i></div>
+              <span>Field Survey</span>
+            </button>
+          </div>
+
+          <div class="name-back" style="margin-top:28px">
+            <button class="ghost" data-back="intro"><i data-lucide="arrow-left"></i>Back</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. Name -->
+      <section class="screen" data-step="name">
+        <div class="name-wrap center">
+          <h2>Name your Project Workspace</h2>
+          <div class="name-example">Give your workspace a clear project name</div>
+
+          <div class="name-field">
+            <span class="name-field-icon"><i data-lucide="folder-kanban"></i></span>
+            <input id="workspaceName" placeholder="Your project name" autocomplete="off" />
+            <button class="name-arrow" id="nameNext" title="Continue">
+              <i data-lucide="arrow-right"></i>
+            </button>
+          </div>
+
+          <div class="name-back">
+            <button class="ghost" data-back="projectType"><i data-lucide="arrow-left"></i>Back</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. Start Mode -->
+      <section class="screen" data-step="startMode">
+        <div class="choice-wrap">
+          <h2>How would you like to start <span class="project-name-inline" id="startProjectName"></span>?</h2>
+          <p class="sub">Set up the project structure now, or upload a file and start immediately.</p>
+
+          <div class="choice-grid">
+            <button class="choice-card" id="hierarchyChoice">
+              <div class="choice-check"><i data-lucide="check"></i></div>
+              <div class="choice-icon"><i data-lucide="network"></i></div>
+              <div class="choice-title">Create hierarchy</div>
+              <div class="choice-desc">Set up zones, levels, services and teams now.</div>
+            </button>
+
+            <button class="choice-card" id="quickChoice">
+              <div class="choice-check"><i data-lucide="check"></i></div>
+              <div class="choice-icon"><i data-lucide="zap"></i></div>
+              <div class="choice-title">Quick setup</div>
+              <div class="choice-desc">Upload a 2D drawing or 3D BIM model and start.</div>
+            </button>
+          </div>
+
+          <div class="choice-actions">
+            <button class="ghost" data-back="name"><i data-lucide="arrow-left"></i>Back</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Quick Setup Upload -->
+      <section class="screen" data-step="quickUpload">
+        <div class="upload-wrap">
+          <h2 id="uploadHeading">Choose your project file type</h2>
+          <p class="sub" id="uploadSubheading">Start with a 2D drawing or a 3D BIM model.</p>
+
+          <div class="upload-type-stage" id="uploadTypeStage">
+            <div class="upload-options">
+              <button class="upload-type" data-uploadtype="2D Drawing">
+                <div class="upload-type-head">
+                  <div class="upload-ico"><i data-lucide="file-up"></i></div>
+                  <div class="upload-type-title">2D Drawing</div>
+                </div>
+                <div class="upload-type-desc">PDF, DWG, DXF or image drawing.</div>
+              </button>
+
+              <button class="upload-type" data-uploadtype="3D BIM Model">
+                <div class="upload-type-head">
+                  <div class="upload-ico"><i data-lucide="cloud-upload"></i></div>
+                  <div class="upload-type-title">3D BIM Model</div>
+                </div>
+                <div class="upload-type-desc">IFC, RVT, NWC, NWD or model file.</div>
+              </button>
+            </div>
+            <div class="choice-actions upload-type-back">
+              <button class="ghost" data-back="startMode"><i data-lucide="arrow-left"></i>Back</button>
+            </div>
+          </div>
+
+          <div class="upload-file-stage" id="uploadFileStage">
+            <label class="dropzone" id="dropzone">
+              <input class="file-input" id="fileInput" type="file" />
+              <div class="dropzone-content">
+                <div class="upload-main-icon"><i data-lucide="upload-cloud"></i></div>
+                <div class="dropzone-title">Drop file here or click to browse</div>
+                <div class="dropzone-copy" id="acceptCopy">Choose your project file</div>
+              </div>
+            </label>
+
+            <div class="file-chip" id="fileChip">
+              <div class="file-chip-icon"><i data-lucide="file"></i></div>
+              <div class="file-chip-meta">
+                <div class="file-chip-name" id="fileName">project.pdf</div>
+                <div class="file-chip-size" id="fileSize">2.4 MB</div>
+              </div>
+              <button class="remove-file" id="removeFile" title="Remove file"><i data-lucide="x"></i></button>
+            </div>
+
+            <div class="choice-actions">
+              <button class="secondary" id="uploadStageBack"><i data-lucide="arrow-left"></i>Back</button>
+              <button class="primary" id="quickCreateBtn">
+                Create workspace
+                <i data-lucide="arrow-right"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. Block / Zone -->
+      <section class="screen" data-step="zoneMode">
+        <div class="choice-wrap">
+          <h2>How is your project divided?</h2>
+          <p class="sub">Choose what best matches your project.</p>
+
+          <div class="choice-grid">
+            <button class="choice-card" id="singleZone">
+              <div class="choice-check"><i data-lucide="check"></i></div>
+              <div class="choice-icon"><i data-lucide="building-2"></i></div>
+              <div class="choice-title">Single Block / Zone</div>
+              <div class="choice-desc">One building, tower or project area.</div>
+            </button>
+
+            <button class="choice-card" id="multiZone">
+              <div class="choice-check"><i data-lucide="check"></i></div>
+              <div class="choice-icon"><i data-lucide="blocks"></i></div>
+              <div class="choice-title">Multiple Blocks / Zones</div>
+              <div class="choice-desc">Multiple buildings, towers or project areas.</div>
+            </button>
+          </div>
+
+          <div class="choice-actions">
+            <button class="secondary" data-back="startMode"><i data-lucide="arrow-left"></i>Back</button>
+            <button class="primary" id="zoneModeContinue" disabled style="opacity:.5">
+              Continue
+              <i data-lucide="arrow-right"></i>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. Zone Count -->
+      <section class="screen" data-step="zoneCount">
+        <div class="count-wrap">
+          <h2>How many blocks or zones?</h2>
+          <p class="sub">You can rename them later.</p>
+
+          <div class="count-control">
+            <div class="counter">
+              <div>
+                <span class="counter-label">Number of zones</span>
+                <span class="counter-value" id="zoneCountValue">2</span>
+              </div>
+              <div class="spin">
+                <button id="zoneUp" aria-label="Increase zones"><i data-lucide="chevron-up"></i></button>
+                <button id="zoneDown" aria-label="Decrease zones"><i data-lucide="chevron-down"></i></button>
+              </div>
+            </div>
+          </div>
+
+          <div class="choice-actions" style="margin-top:22px">
+            <button class="secondary" data-back="zoneMode"><i data-lucide="arrow-left"></i>Back</button>
+            <button class="primary" id="createZones">
+              Create zones
+              <i data-lucide="arrow-right"></i>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 7. Levels -->
+      <section class="screen" data-step="levels">
+        <div class="hierarchy-layout">
+          <aside class="tree">
+            <div class="tree-head"><i data-lucide="move"></i>Project</div>
+            <div class="tree-scroll" id="levelTree"></div>
+          </aside>
+
+          <div class="panel" id="levelPanel">
+            <div class="eyebrow" id="zoneEyebrow">Zone 01</div>
+            <h3>Set up levels</h3>
+            <p class="sub">Add basements and upper levels. Ground floor is included.</p>
+
+            <div class="level-mode">
+              <button class="pill" id="singleLevelPill"><i data-lucide="square"></i><span>Ground floor only</span></button>
+              <button class="pill active" id="multiLevelPill"><i data-lucide="layers-3"></i><span>Multiple levels</span></button>
+            </div>
+
+            <div class="level-builder" id="levelBuilder">
+              <div class="level-field-card">
+                <div class="level-field-head"><span class="level-symbol">B</span><div class="field-label">Basements</div></div>
+                <div class="mini-field">
+                  <input id="basementCountInput" type="number" min="0" max="20" value="0">
+                  <div class="stepper">
+                    <button type="button" class="stepper-up" data-target="basementCountInput" aria-label="Increase basements"><i data-lucide="chevron-up"></i></button>
+                    <button type="button" class="stepper-down" data-target="basementCountInput" aria-label="Decrease basements"><i data-lucide="chevron-down"></i></button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="ground-badge-wrap">
+                <span class="level-symbol ground">G+</span>
+              </div>
+
+              <div class="level-field-card">
+                <div class="level-field-head"><span class="level-symbol">L</span><div class="field-label">Upper levels</div></div>
+                <div class="mini-field">
+                  <input id="upperLevelCountInput" type="number" min="0" max="150" value="8">
+                  <div class="stepper">
+                    <button type="button" class="stepper-up" data-target="upperLevelCountInput" aria-label="Increase upper levels"><i data-lucide="chevron-up"></i></button>
+                    <button type="button" class="stepper-down" data-target="upperLevelCountInput" aria-label="Decrease upper levels"><i data-lucide="chevron-down"></i></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="level-create-row">
+              <button class="secondary create-levels-action" id="createLevels">
+                <i data-lucide="plus"></i><span id="createLevelsLabel">Create levels</span>
+              </button>
+              <button class="ghost" id="skipLevels" hidden style="font-size:13px">Skip</button>
+            </div>
+
+            <div class="panel-actions">
+              <button class="ghost" data-back="zoneMode"><i data-lucide="arrow-left"></i>Back</button>
+              <button class="primary" id="continueLevels" disabled>
+                <span id="continueLevelsLabel">Continue</span>
+                <i data-lucide="arrow-right"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 8. Services -->
+      <section class="screen" data-step="services">
+        <div class="hierarchy-layout">
+          <aside class="tree">
+            <div class="tree-head"><i data-lucide="move"></i>Project</div>
+            <div class="tree-scroll" id="serviceTree"></div>
+          </aside>
+
+          <div class="panel">
+            <div class="service-head">
+              <div>
+                <div class="eyebrow" id="serviceZoneLabel">ZONE 01</div>
+                <h3 id="serviceTitle">Services for Ground Floor</h3>
+              </div>
+              <button class="apply-link" id="applyAll">Apply to all floors</button>
+            </div>
+
+            <div class="service-grid">
+              <button class="service active" data-service="Architecture"><span class="service-icon"><i data-lucide="building-2"></i></span>Architecture</button>
+              <button class="service active" data-service="Structure"><span class="service-icon"><i data-lucide="layers-3"></i></span>Structure</button>
+              <button class="service" data-service="Mechanical"><span class="service-icon"><i data-lucide="settings"></i></span>Mechanical</button>
+              <button class="service" data-service="Electrical"><span class="service-icon"><i data-lucide="zap"></i></span>Electrical</button>
+              <button class="service" data-service="Plumbing"><span class="service-icon"><i data-lucide="droplets"></i></span>Plumbing</button>
+              <button class="service" data-service="HVAC"><span class="service-icon"><i data-lucide="wind"></i></span>HVAC</button>
+              <form class="custom-service" id="customServiceForm">
+                <input id="customServiceInput" type="text" placeholder="Add custom service" maxlength="32" aria-label="Custom service name">
+                <button type="submit" aria-label="Add service"><i data-lucide="plus"></i></button>
+              </form>
+            </div>
+
+            <div class="panel-actions">
+              <button class="ghost" data-back="levels"><i data-lucide="arrow-left"></i>Back</button>
+              <button class="ghost" id="skipServices" style="font-size:13px">Skip</button>
+              <button class="primary" id="continueServices">
+                <span id="continueServicesLabel">Continue</span>
+                <i data-lucide="arrow-right"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 9. Teams -->
+      <section class="screen" data-step="teams">
+        <div class="screen-inner center">
+          <h2>Create a team structure?</h2>
+          <p class="sub">Choose the teams you want now.</p>
+
+          <div class="team-grid">
+            <button class="team" data-team="Design team">
+              <div class="team-ico"><i data-lucide="palette"></i></div>
+              <div class="team-name">Design team</div>
+              <div class="team-desc">Concepts, visuals, proposals</div>
+            </button>
+
+            <button class="team active" data-team="Architecture">
+              <div class="team-ico"><i data-lucide="building-2"></i></div>
+              <div class="team-name">Architecture</div>
+              <div class="team-desc">Plans, elevations, details</div>
+            </button>
+
+            <button class="team" data-team="HVAC">
+              <div class="team-ico"><i data-lucide="wind"></i></div>
+              <div class="team-name">HVAC</div>
+              <div class="team-desc">Airflow, ducts, comfort</div>
+            </button>
+
+            <button class="team active" data-team="Structure">
+              <div class="team-ico"><i data-lucide="layers-3"></i></div>
+              <div class="team-name">Structure</div>
+              <div class="team-desc">Frames, loads, coordination</div>
+            </button>
+
+            <button class="team" data-team="Mechanical">
+              <div class="team-ico"><i data-lucide="settings"></i></div>
+              <div class="team-name">Mechanical</div>
+              <div class="team-desc">Systems, equipment, routing</div>
+            </button>
+
+            <button class="team" data-team="Plumbing">
+              <div class="team-ico"><i data-lucide="droplets"></i></div>
+              <div class="team-name">Plumbing</div>
+              <div class="team-desc">Water, drainage, fixtures</div>
+            </button>
+          </div>
+
+          <div class="button-row">
+            <button class="secondary" data-back="services"><i data-lucide="arrow-left"></i>Back</button>
+            <button class="secondary" id="skipTeams">Skip</button>
+            <button class="primary" data-next="review">
+              Continue
+              <i data-lucide="arrow-right"></i>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 10. Review -->
+      <section class="screen" data-step="review">
+        <div class="review-wrap">
+          <h2>Ready to create your workspace?</h2>
+          <p class="sub">Review the setup for <strong id="reviewWorkspaceTitle" style="color:var(--ink)">Stalwart</strong></p>
+
+          <div class="review-stats">
+            <div class="review-stat">
+              <div class="stat-number" id="reviewZones">1</div>
+              <div class="stat-label">ZONES</div>
+            </div>
+
+            <div class="review-stat">
+              <div class="stat-number" id="reviewLevels">6</div>
+              <div class="stat-label">LEVELS</div>
+            </div>
+
+            <div class="review-stat">
+              <div class="stat-number" id="reviewServices">2</div>
+              <div class="stat-label">SERVICES</div>
+            </div>
+
+            <div class="review-stat">
+              <div class="stat-number" id="reviewTeams">2</div>
+              <div class="stat-label">TEAMS</div>
+            </div>
+          </div>
+
+          <div>
+            <button type="button" class="review-edit-link" id="editDetailsLink">Edit details</button>
+          </div>
+
+          <div class="review-edit">
+            <button class="ghost" data-back="teams"><i data-lucide="arrow-left"></i>Back</button>
+            <button class="primary" id="createWorkspace">
+              Create workspace
+              <i data-lucide="arrow-right"></i>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Creating -->
+      <section class="screen" data-step="creating">
+        <div class="screen-inner center">
+          <div class="creation-spinner-wrap">
+            <svg viewBox="0 0 44 44">
+              <circle class="ring-track" cx="22" cy="22" r="19"></circle>
+              <circle class="ring-progress" id="ringProgress" cx="22" cy="22" r="19"></circle>
+            </svg>
+            <div class="creation-percent" id="creationPercent">0%</div>
+          </div>
+
+          <div class="creation-status" id="creationStatus">Creating your workspace...</div>
+        </div>
+      </section>
+
+      <!-- Success -->
+      <section class="screen" data-step="success">
+        <div class="screen-inner center">
+          <div class="success">
+            <svg viewBox="0 0 64 64">
+              <path d="M20 33l8 8 17-19"></path>
+            </svg>
+          </div>
+
+          <h2 id="successTitle">Workspace ready</h2>
+          <p class="sub" id="successSub">Your project workspace has been created.</p>
+
+          <div class="success-file" id="successFile">
+            <div class="file-chip-icon"><i data-lucide="file"></i></div>
+            <div class="file-chip-meta">
+              <div class="file-chip-name" id="successFileName">project.pdf</div>
+              <div class="file-chip-size" id="successFileType">2D Drawing</div>
+            </div>
+          </div>
+
+          <button class="primary" style="margin-top:22px" id="openWorkspace">
+            Proceed to workspace
+            <i data-lucide="arrow-right"></i>
+          </button>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const state = {
+    projectType: "Construction",
+    workspaceName: "",
+    quick: false,
+
+    uploadType: "2D Drawing",
+    uploadedFile: null,
+
+    zoneMode: null,
+    zoneCount: 2,
+    zones: [],
+    currentZone: 0,
+    currentFloor: 0,
+
+    levelsPerZone: {},
+    collapsedZones: new Set(),
+    servicesPerFloor: {},
+    services: new Set(["Architecture","Structure"]),
+    teams: new Set(["Architecture","Structure"])
+  };
+
+  let current = "intro";
+
+  function refreshIcons(){
+    if(window.lucide) lucide.createIcons();
+  }
+
+  refreshIcons();
+
+  function go(step){
+    const oldScreen = document.querySelector(`[data-step="${current}"]`);
+    const nextScreen = document.querySelector(`[data-step="${step}"]`);
+    if(!nextScreen) return;
+
+    if(oldScreen){
+      oldScreen.classList.remove("active");
+      oldScreen.classList.add("exit-left");
+      setTimeout(()=>oldScreen.classList.remove("exit-left"),520);
+    }
+
+    nextScreen.classList.add("active");
+    current = step;
+
+    if(step==="review") refreshReview();
+    if(step==="services") updateServiceView();
+    refreshIcons();
+  }
+
+  // Jumps straight to a step with no exit-transition from "intro" — used
+  // when arriving here already mid-flow (e.g. resuming hierarchy setup),
+  // so the intro screen never flashes on screen first.
+  function bootToStep(step){
+    const target = document.querySelector(`[data-step="${step}"]`);
+    if(!target) return;
+    document.querySelectorAll(".screen").forEach(el=>el.classList.remove("active","exit-left"));
+    target.classList.add("active");
+    current = step;
+    if(step==="review") refreshReview();
+    if(step==="services") updateServiceView();
+    refreshIcons();
+  }
+
+  function toast(message){
+    const el = document.getElementById("toast");
+    el.textContent = message;
+    el.classList.add("show");
+    setTimeout(()=>el.classList.remove("show"),1600);
+  }
+
+  document.querySelectorAll("[data-next]").forEach(btn=>{
+    btn.addEventListener("click",()=>go(btn.dataset.next));
+  });
+
+  document.querySelectorAll("[data-back]").forEach(btn=>{
+    btn.addEventListener("click",()=>go(btn.dataset.back));
+  });
+
+  /* Project Type */
+  document.querySelectorAll(".project-card").forEach(card=>{
+    card.addEventListener("click",()=>{
+      document.querySelectorAll(".project-card").forEach(c=>c.classList.remove("selected"));
+      card.classList.add("selected");
+      state.projectType = card.dataset.project;
+      setTimeout(()=>go("name"),180);
+    });
+  });
+
+  /* Name */
+  const nameInput = document.getElementById("workspaceName");
+
+  function submitName(){
+    const value = nameInput.value.trim();
+    if(!value){
+      toast("Enter a project name");
+      nameInput.focus();
+      return;
+    }
+    state.workspaceName = value;
+    document.getElementById("startProjectName").textContent = value;
+    go("startMode");
+  }
+
+  document.getElementById("nameNext").addEventListener("click",submitName);
+  nameInput.addEventListener("keydown",e=>{
+    if(e.key==="Enter") submitName();
+  });
+
+  /* Start mode */
+  document.getElementById("hierarchyChoice").addEventListener("click",()=>{
+    state.quick = false;
+    go("zoneMode");
+  });
+
+  document.getElementById("quickChoice").addEventListener("click",()=>{
+    state.quick = true;
+    resetUploadStage();
+    go("quickUpload");
+  });
+
+  /* Quick upload */
+  function resetUploadStage(){
+    const typeStage = document.getElementById("uploadTypeStage");
+    typeStage.classList.remove("hidden","leaving");
+    document.getElementById("uploadFileStage").classList.remove("show");
+    document.querySelectorAll(".upload-type").forEach(x=>x.classList.remove("active"));
+    document.getElementById("uploadHeading").textContent = "Choose your project file type";
+    document.getElementById("uploadSubheading").textContent = "Start with a 2D drawing or a 3D BIM model.";
+  }
+
+  document.querySelectorAll(".upload-type").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      document.querySelectorAll(".upload-type").forEach(x=>x.classList.remove("active"));
+      btn.classList.add("active");
+      state.uploadType = btn.dataset.uploadtype;
+      document.getElementById("uploadHeading").textContent = `Upload your ${state.uploadType}`;
+      document.getElementById("uploadSubheading").textContent = "Drop your file below and we’ll prepare the workspace.";
+
+      document.getElementById("acceptCopy").textContent =
+        state.uploadType==="2D Drawing"
+          ? "Choose your 2D drawing"
+          : "Choose your 3D BIM model";
+
+      const typeStage = document.getElementById("uploadTypeStage");
+      typeStage.classList.add("leaving");
+      setTimeout(()=>{
+        typeStage.classList.add("hidden");
+        typeStage.classList.remove("leaving");
+        document.getElementById("uploadFileStage").classList.add("show");
+      },220);
+    });
+  });
+
+  document.getElementById("uploadStageBack").addEventListener("click",()=>{
+    resetUploadStage();
+  });
+
+  const fileInput = document.getElementById("fileInput");
+  const dropzone = document.getElementById("dropzone");
+  const fileChip = document.getElementById("fileChip");
+
+  function prettySize(bytes){
+    if(bytes < 1024) return bytes + " B";
+    const kb = bytes / 1024;
+    if(kb < 1024) return kb.toFixed(1) + " KB";
+    return (kb/1024).toFixed(1) + " MB";
+  }
+
+  function setFile(file){
+    state.uploadedFile = file;
+    state.uploadedFileDataUrl = null;
+
+    if(!file){
+      fileChip.classList.remove("show");
+      fileInput.value = "";
+      return;
+    }
+
+    document.getElementById("fileName").textContent = file.name;
+    document.getElementById("fileSize").textContent = prettySize(file.size);
+    fileChip.classList.add("show");
+
+    // Images can be previewed directly in the workspace's 2D viewer —
+    // read it now (synchronously relative to file selection) so it's
+    // ready by the time we hand off to project_workspace.html.
+    if(file.type && file.type.startsWith("image/")){
+      const reader = new FileReader();
+      reader.onload = () => { state.uploadedFileDataUrl = reader.result; };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  fileInput.addEventListener("change",()=>{
+    if(fileInput.files && fileInput.files[0]) setFile(fileInput.files[0]);
+  });
+
+  ["dragenter","dragover"].forEach(evt=>{
+    dropzone.addEventListener(evt,e=>{
+      e.preventDefault();
+      dropzone.classList.add("drag");
+    });
+  });
+
+  ["dragleave","drop"].forEach(evt=>{
+    dropzone.addEventListener(evt,e=>{
+      e.preventDefault();
+      dropzone.classList.remove("drag");
+    });
+  });
+
+  dropzone.addEventListener("drop",e=>{
+    const file = e.dataTransfer.files && e.dataTransfer.files[0];
+    if(file) setFile(file);
+  });
+
+  document.getElementById("removeFile").addEventListener("click",e=>{
+    e.preventDefault();
+    e.stopPropagation();
+    setFile(null);
+  });
+
+  document.getElementById("quickCreateBtn").addEventListener("click",()=>{
+    if(!state.uploadedFile){
+      toast("Upload a project file first");
+      return;
+    }
+
+    go("creating");
+    runCreation(true);
+  });
+
+  /* Zone mode */
+  const zoneModeContinue = document.getElementById("zoneModeContinue");
+
+  function chooseZoneMode(mode){
+    state.zoneMode = mode;
+
+    const single = document.getElementById("singleZone");
+    const multi = document.getElementById("multiZone");
+
+    single.classList.toggle("selected", mode==="single");
+    multi.classList.toggle("selected", mode==="multi");
+
+    zoneModeContinue.disabled = false;
+    zoneModeContinue.style.opacity = "1";
+  }
+
+  document.getElementById("singleZone").addEventListener("click",()=>chooseZoneMode("single"));
+  document.getElementById("multiZone").addEventListener("click",()=>chooseZoneMode("multi"));
+
+  zoneModeContinue.addEventListener("click",()=>{
+    if(!state.zoneMode) return;
+
+    if(state.zoneMode==="single"){
+      state.zoneCount = 1;
+      state.zones = ["Zone 01"];
+      state.currentZone = 0;
+      buildLevelTree();
+      go("levels");
+    }else{
+      go("zoneCount");
+    }
+  });
+
+  /* Zone count */
+  const zoneValue = document.getElementById("zoneCountValue");
+
+  function setZoneCount(value){
+    state.zoneCount = Math.max(2, Math.min(50, value));
+    zoneValue.textContent = state.zoneCount;
+  }
+
+  document.getElementById("zoneUp").addEventListener("click",()=>setZoneCount(state.zoneCount+1));
+  document.getElementById("zoneDown").addEventListener("click",()=>setZoneCount(state.zoneCount-1));
+
+  document.getElementById("createZones").addEventListener("click",()=>{
+    state.zones = Array.from({length:state.zoneCount},(_,i)=>`Zone ${String(i+1).padStart(2,"0")}`);
+    state.currentZone = 0;
+
+    /* Expand active zone, collapse the rest */
+    state.collapsedZones = new Set();
+    state.zones.forEach((_,i)=>{
+      if(i !== 0) state.collapsedZones.add(i);
+    });
+
+    buildLevelTree();
+    syncLevelEditorFromState();
+    go("levels");
+  });
+
+  /* Levels */
+  let levelMode = "multi";
+  const continueLevels = document.getElementById("continueLevels");
+  const createLevelsButton = document.getElementById("createLevels");
+  const createLevelsLabel = document.getElementById("createLevelsLabel");
+  const skipLevels = document.getElementById("skipLevels");
+
+  function setLevelsReady(ready){
+    continueLevels.disabled = !ready;
+    const hasCreatedLevels = (state.levelsPerZone[state.currentZone] || []).length > 0;
+    createLevelsButton.disabled = ready;
+    createLevelsLabel.textContent = hasCreatedLevels ? "Create more" : "Create levels";
+
+    /* Show skip for multi-zone when current zone has no levels */
+    skipLevels.hidden = !(state.zoneCount > 1 && !hasCreatedLevels);
+
+    /* Dynamic continue button label */
+    const continueLbl = document.getElementById("continueLevelsLabel");
+    if(state.zoneCount > 1 && state.currentZone < state.zoneCount - 1){
+      const nextZone = state.zones[state.currentZone + 1] || `Zone ${String(state.currentZone + 2).padStart(2,"0")}`;
+      continueLbl.textContent = `Setup ${nextZone}`;
+    }else{
+      continueLbl.textContent = "Continue";
+    }
+  }
+
+  function switchLevelZone(nextZone){
+    if(nextZone===state.currentZone) return;
+    const panel = document.getElementById("levelPanel");
+    panel.classList.add("zone-switching");
+    setTimeout(()=>{
+      state.currentZone = nextZone;
+
+      /* Auto-collapse all zones except the active one */
+      state.zones.forEach((_,i)=>{
+        if(i===nextZone) state.collapsedZones.delete(i);
+        else state.collapsedZones.add(i);
+      });
+
+      buildLevelTree();
+      syncLevelEditorFromState();
+      requestAnimationFrame(()=>panel.classList.remove("zone-switching"));
+    },260);
+  }
+
+  function advanceLevelZone(){
+    const zoneIndex = state.currentZone;
+    if(state.zoneCount>1 && zoneIndex < state.zoneCount-1){
+      switchLevelZone(zoneIndex+1);
+      setTimeout(()=>toast(`Now set up ${state.zones[zoneIndex+1]}`),280);
+    }else{
+      state.currentZone = 0;
+      state.currentFloor = 0;
+
+      /* Expand Zone 01, collapse others */
+      state.collapsedZones = new Set();
+      state.zones.forEach((_,i)=>{
+        if(i !== 0) state.collapsedZones.add(i);
+      });
+
+      updateServiceView();
+      go("services");
+    }
+  }
+
+  document.getElementById("singleLevelPill").addEventListener("click",()=>{
+    levelMode = "single";
+    document.getElementById("singleLevelPill").classList.add("active");
+    document.getElementById("multiLevelPill").classList.remove("active");
+    document.getElementById("levelBuilder").style.display = "none";
+    setLevelsReady(false);
+  });
+
+  document.getElementById("multiLevelPill").addEventListener("click",()=>{
+    levelMode = "multi";
+    document.getElementById("multiLevelPill").classList.add("active");
+    document.getElementById("singleLevelPill").classList.remove("active");
+    document.getElementById("levelBuilder").style.display = "flex";
+    setLevelsReady(false);
+  });
+
+  function createLevelNames(basements, upper){
+    const names = [];
+
+    for(let i=basements;i>=1;i--){
+      names.push(`Basement ${String(i).padStart(2,"0")}`);
+    }
+
+    names.push("Ground Floor");
+
+    for(let i=1;i<=upper;i++){
+      names.push(`Floor ${String(i).padStart(2,"0")}`);
+    }
+
+    return names;
+  }
+
+  function buildLevelTree(){
+    if(!state.zones.length) state.zones = ["Zone 01"];
+
+    const tree = document.getElementById("levelTree");
+    tree.innerHTML = "";
+
+    state.zones.forEach((zone,index)=>{
+      const zoneEl = document.createElement("div");
+      const isCollapsed = state.collapsedZones.has(index);
+      zoneEl.className = "tree-zone" + (index===state.currentZone ? " active" : "") + (isCollapsed ? " collapsed" : "");
+      zoneEl.innerHTML = `<i data-lucide="layers-3"></i><span>${zone}</span><button class="tree-chevron" type="button" aria-label="${isCollapsed ? "Expand" : "Collapse"} ${zone}"><i data-lucide="chevron-down"></i></button>`;
+
+      zoneEl.querySelector(".tree-chevron").addEventListener("click",event=>{
+        event.stopPropagation();
+        if(state.collapsedZones.has(index)) state.collapsedZones.delete(index);
+        else state.collapsedZones.add(index);
+        buildLevelTree();
+      });
+
+      zoneEl.addEventListener("click",()=>{
+        switchLevelZone(index);
+      });
+
+      tree.appendChild(zoneEl);
+
+      const levels = state.levelsPerZone[index] || [];
+
+      if(levels.length && !isCollapsed){
+        levels.forEach((level,levelIndex)=>{
+          const item = document.createElement("div");
+          item.className = "tree-level";
+          const levelName = document.createElement("span");
+          levelName.className = "tree-level-name";
+          levelName.textContent = level;
+          const deleteButton = document.createElement("button");
+          deleteButton.type = "button";
+          deleteButton.className = "tree-level-delete";
+          deleteButton.setAttribute("aria-label",`Delete ${level}`);
+          deleteButton.innerHTML = `<i data-lucide="trash-2"></i>`;
+          deleteButton.addEventListener("click",event=>{
+            event.stopPropagation();
+            state.levelsPerZone[index].splice(levelIndex,1);
+            syncLevelEditorFromState();
+            setLevelsReady(false);
+            buildLevelTree();
+            toast(`${level} removed`);
+          });
+          item.append(levelName,deleteButton);
+          tree.appendChild(item);
+        });
+      }else if(!isCollapsed){
+        const empty = document.createElement("div");
+        empty.className = "tree-empty";
+        empty.textContent = "No levels";
+        tree.appendChild(empty);
+      }
+    });
+
+    document.getElementById("zoneEyebrow").textContent =
+      state.zones[state.currentZone] || "Zone 01";
+
+    refreshIcons();
+  }
+
+  function syncLevelEditorFromState(){
+    const levels = state.levelsPerZone[state.currentZone] || [];
+
+    if(!levels.length){
+      document.getElementById("basementCountInput").value = 0;
+      document.getElementById("upperLevelCountInput").value = 8;
+      document.getElementById("multiLevelPill").click();
+      setLevelsReady(false);
+      return;
+    }
+
+    const basementCount = levels.filter(x=>x.startsWith("Basement")).length;
+    const upperCount = levels.filter(x=>x.startsWith("Floor")).length;
+
+    document.getElementById("basementCountInput").value = basementCount;
+    document.getElementById("upperLevelCountInput").value = upperCount;
+
+    if(levels.length===1 && levels[0]==="Ground Floor"){
+      document.getElementById("singleLevelPill").click();
+    }else{
+      document.getElementById("multiLevelPill").click();
+    }
+    setLevelsReady(true);
+  }
+
+  ["basementCountInput","upperLevelCountInput"].forEach(id=>{
+    document.getElementById(id).addEventListener("input",()=>setLevelsReady(false));
+  });
+
+  /* Stepper buttons */
+  document.querySelectorAll(".stepper-up").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      const input = document.getElementById(btn.dataset.target);
+      if(!input) return;
+      const max = parseInt(input.max) || 150;
+      const cur = parseInt(input.value) || 0;
+      if(cur < max){ input.value = cur + 1; input.dispatchEvent(new Event("input")); }
+    });
+  });
+
+  document.querySelectorAll(".stepper-down").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      const input = document.getElementById(btn.dataset.target);
+      if(!input) return;
+      const min = parseInt(input.min) || 0;
+      const cur = parseInt(input.value) || 0;
+      if(cur > min){ input.value = cur - 1; input.dispatchEvent(new Event("input")); }
+    });
+  });
+
+  document.getElementById("createLevels").addEventListener("click",()=>{
+    const zoneIndex = state.currentZone;
+
+    if(levelMode==="single"){
+      state.levelsPerZone[zoneIndex] = ["Ground Floor"];
+    }else{
+      const basementCount = Math.max(0,parseInt(document.getElementById("basementCountInput").value || "0"));
+      const upperCount = Math.max(0,parseInt(document.getElementById("upperLevelCountInput").value || "0"));
+
+      state.levelsPerZone[zoneIndex] = createLevelNames(basementCount,upperCount);
+    }
+
+    buildLevelTree();
+    setLevelsReady(true);
+    toast(`Levels created for ${state.zones[zoneIndex]}`);
+  });
+
+  continueLevels.addEventListener("click",()=>{
+    advanceLevelZone();
+  });
+
+  skipLevels.addEventListener("click",()=>{
+    const skippedZone = state.zones[state.currentZone];
+    advanceLevelZone();
+    toast(`${skippedZone} skipped. You can add its levels later.`);
+  });
+
+  /* Service tree & Per-Floor Services */
+  const presetServiceIcons = {
+    Architecture:"building-2",
+    Structure:"layers-3",
+    Mechanical:"settings",
+    Electrical:"zap",
+    Plumbing:"droplets",
+    HVAC:"wind"
+  };
+
+  function getFloorServices(zoneIndex, floorIndex){
+    const key = `${zoneIndex}_${floorIndex}`;
+    if(!state.servicesPerFloor[key]){
+      state.servicesPerFloor[key] = new Set(["Architecture","Structure"]);
+    }
+    return state.servicesPerFloor[key];
+  }
+
+  function syncGlobalServices(){
+    const all = new Set();
+    Object.values(state.servicesPerFloor).forEach(sSet => {
+      sSet.forEach(s => all.add(s));
+    });
+    if(all.size === 0){
+      all.add("Architecture");
+      all.add("Structure");
+    }
+    state.services = all;
+  }
+
+  function syncServiceButtons(){
+    const currentServices = getFloorServices(state.currentZone, state.currentFloor);
+    document.querySelectorAll(".service").forEach(btn=>{
+      const service = btn.dataset.service;
+      btn.classList.toggle("active", currentServices.has(service));
+    });
+  }
+
+  function toggleServiceForCurrentFloor(serviceName){
+    const currentServices = getFloorServices(state.currentZone, state.currentFloor);
+    if(currentServices.has(serviceName)){
+      currentServices.delete(serviceName);
+    }else{
+      currentServices.add(serviceName);
+    }
+    syncGlobalServices();
+    syncServiceButtons();
+    buildServiceTree();
+  }
+
+  function updateServiceTitle(){
+    const zone = state.zones[state.currentZone] || "Zone 01";
+    const floorList = state.levelsPerZone[state.currentZone] || ["Ground Floor"];
+    const floor = floorList[state.currentFloor] || floorList[0] || "Ground Floor";
+
+    const eyebrowEl = document.getElementById("serviceZoneLabel");
+    if(eyebrowEl) eyebrowEl.textContent = zone.toUpperCase();
+
+    const titleEl = document.getElementById("serviceTitle");
+    if(titleEl) titleEl.textContent = `Services for ${floor}`;
+
+    updateContinueServicesLabel();
+  }
+
+  function updateContinueServicesLabel(){
+    const lbl = document.getElementById("continueServicesLabel");
+    if(!lbl) return;
+
+    const currentLevels = state.levelsPerZone[state.currentZone] || ["Ground Floor"];
+    if(state.currentFloor < currentLevels.length - 1){
+      const nextFloor = currentLevels[state.currentFloor + 1];
+      lbl.textContent = `Next: ${nextFloor}`;
+    }else if(state.zoneCount > 1 && state.currentZone < state.zoneCount - 1){
+      const nextZone = state.zones[state.currentZone + 1] || `Zone ${String(state.currentZone + 2).padStart(2,"0")}`;
+      lbl.textContent = `Setup ${nextZone}`;
+    }else{
+      lbl.textContent = "Continue";
+    }
+  }
+
+  function updateServiceView(){
+    updateServiceTitle();
+    syncServiceButtons();
+    buildServiceTree();
+  }
+
+  function buildServiceTree(){
+    const tree = document.getElementById("serviceTree");
+    if(!tree) return;
+    tree.innerHTML = "";
+
+    state.zones.forEach((zone,zoneIndex)=>{
+      const zoneEl = document.createElement("div");
+      const isCollapsed = state.collapsedZones.has(zoneIndex);
+      zoneEl.className = "tree-zone" + (zoneIndex===state.currentZone ? " active" : "") + (isCollapsed ? " collapsed" : "");
+      zoneEl.innerHTML = `<i data-lucide="layers-3"></i><span>${zone}</span><button class="tree-chevron" type="button" aria-label="${isCollapsed ? "Expand" : "Collapse"} ${zone}"><i data-lucide="${isCollapsed ? "chevron-right" : "chevron-down"}"></i></button>`;
+
+      zoneEl.querySelector(".tree-chevron").addEventListener("click",event=>{
+        event.stopPropagation();
+        if(state.collapsedZones.has(zoneIndex)) state.collapsedZones.delete(zoneIndex);
+        else state.collapsedZones.add(zoneIndex);
+        buildServiceTree();
+      });
+
+      zoneEl.addEventListener("click",()=>{
+        state.currentZone = zoneIndex;
+        state.currentFloor = 0;
+        state.zones.forEach((_,i)=>{
+          if(i===zoneIndex) state.collapsedZones.delete(i);
+          else state.collapsedZones.add(i);
+        });
+        updateServiceView();
+      });
+
+      tree.appendChild(zoneEl);
+
+      const levels = state.levelsPerZone[zoneIndex] || ["Ground Floor"];
+
+      if(!isCollapsed){
+        levels.forEach((level,levelIndex)=>{
+          const item = document.createElement("div");
+          const isCurrentFloor = (zoneIndex===state.currentZone && levelIndex===state.currentFloor);
+          item.className = "tree-level" + (isCurrentFloor ? " active" : "");
+          item.innerHTML = `<span class="tree-level-name">${level}</span>`;
+
+          item.addEventListener("click",()=>{
+            state.currentZone = zoneIndex;
+            state.currentFloor = levelIndex;
+            updateServiceView();
+          });
+
+          tree.appendChild(item);
+
+          // Services directly under this floor
+          const floorServices = getFloorServices(zoneIndex, levelIndex);
+          if(floorServices && floorServices.size > 0){
+            floorServices.forEach(service=>{
+              const serviceItem = document.createElement("div");
+              serviceItem.className = "tree-service" + (isCurrentFloor ? " active" : "");
+              const iconName = presetServiceIcons[service] || "wrench";
+              serviceItem.innerHTML = `<i data-lucide="${iconName}"></i><span>${service}</span>`;
+
+              serviceItem.addEventListener("click",(e)=>{
+                e.stopPropagation();
+                state.currentZone = zoneIndex;
+                state.currentFloor = levelIndex;
+                updateServiceView();
+              });
+
+              tree.appendChild(serviceItem);
+            });
+          }
+        });
+      }
+    });
+
+    refreshIcons();
+  }
+
+  function advanceServiceFloor(){
+    const currentLevels = state.levelsPerZone[state.currentZone] || ["Ground Floor"];
+
+    // More floors in current zone
+    if(state.currentFloor < currentLevels.length - 1){
+      state.currentFloor++;
+      updateServiceView();
+      const nextFloor = currentLevels[state.currentFloor];
+      toast(`Now setting services for ${nextFloor}`);
+      return;
+    }
+
+    // Last floor in current zone, but more zones exist
+    if(state.zoneCount > 1 && state.currentZone < state.zoneCount - 1){
+      state.currentZone++;
+      state.currentFloor = 0;
+
+      state.zones.forEach((_,i)=>{
+        if(i===state.currentZone) state.collapsedZones.delete(i);
+        else state.collapsedZones.add(i);
+      });
+
+      updateServiceView();
+      const nextZone = state.zones[state.currentZone];
+      toast(`Now setting services for ${nextZone}`);
+      return;
+    }
+
+    // All done -> teams
+    syncGlobalServices();
+    go("teams");
+  }
+
+  function bindServiceButton(btn){
+    btn.addEventListener("click",()=>{
+      const service = btn.dataset.service;
+      toggleServiceForCurrentFloor(service);
+    });
+  }
+
+  document.querySelectorAll(".service").forEach(bindServiceButton);
+
+  document.getElementById("customServiceForm").addEventListener("submit",event=>{
+    event.preventDefault();
+    const input = document.getElementById("customServiceInput");
+    const serviceName = input.value.trim();
+    if(!serviceName) return;
+
+    const exists = [...document.querySelectorAll(".service")].some(
+      button=>button.dataset.service.toLowerCase()===serviceName.toLowerCase()
+    );
+    if(exists){
+      toggleServiceForCurrentFloor(serviceName);
+      input.value = "";
+      return;
+    }
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "service active";
+    button.dataset.service = serviceName;
+    const icon = document.createElement("span");
+    icon.className = "service-icon";
+    icon.innerHTML = `<i data-lucide="wrench"></i>`;
+    const label = document.createElement("span");
+    label.textContent = serviceName;
+    button.append(icon,label);
+    document.getElementById("customServiceForm").before(button);
+    bindServiceButton(button);
+
+    getFloorServices(state.currentZone, state.currentFloor).add(serviceName);
+    syncGlobalServices();
+    buildServiceTree();
+    refreshIcons();
+    input.value = "";
+    toast(`${serviceName} added`);
+  });
+
+  document.getElementById("applyAll").addEventListener("click",()=>{
+    const currentServices = getFloorServices(state.currentZone, state.currentFloor);
+    const floorList = state.levelsPerZone[state.currentZone] || ["Ground Floor"];
+
+    floorList.forEach((_,fIdx)=>{
+      state.servicesPerFloor[`${state.currentZone}_${fIdx}`] = new Set(currentServices);
+    });
+
+    syncGlobalServices();
+    buildServiceTree();
+    const zoneName = state.zones[state.currentZone] || "current zone";
+    toast(`Services applied to all floors in ${zoneName}`);
+  });
+
+  const continueServicesBtn = document.getElementById("continueServices");
+  if(continueServicesBtn){
+    continueServicesBtn.addEventListener("click",()=>{
+      advanceServiceFloor();
+    });
+  }
+
+  const skipServicesBtn = document.getElementById("skipServices");
+  if(skipServicesBtn){
+    skipServicesBtn.addEventListener("click",()=>{
+      syncGlobalServices();
+      go("teams");
+      toast("Services setup skipped");
+    });
+  }
+
+  /* Teams */
+  document.querySelectorAll(".team").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      btn.classList.toggle("active");
+
+      const team = btn.dataset.team;
+      if(btn.classList.contains("active")) state.teams.add(team);
+      else state.teams.delete(team);
+    });
+  });
+
+  document.getElementById("skipTeams").addEventListener("click",()=>{
+    state.teams.clear();
+    go("review");
+  });
+
+  /* Review */
+  function refreshReview(){
+    syncGlobalServices();
+
+    const titleEl = document.getElementById("reviewWorkspaceTitle");
+    if(titleEl) titleEl.textContent = state.workspaceName || "Stalwart";
+
+    const zonesEl = document.getElementById("reviewZones");
+    if(zonesEl) zonesEl.textContent = state.zoneCount || 1;
+
+    const totalLevels = Object.values(state.levelsPerZone)
+      .reduce((sum,list)=>sum + list.length,0) || (state.zoneCount * 8);
+    const levelsEl = document.getElementById("reviewLevels");
+    if(levelsEl) levelsEl.textContent = totalLevels;
+
+    const servicesEl = document.getElementById("reviewServices");
+    if(servicesEl) servicesEl.textContent = state.services.size || 2;
+
+    const teamsEl = document.getElementById("reviewTeams");
+    if(teamsEl) teamsEl.textContent = state.teams.size || 2;
+  }
+
+  const editDetailsLink = document.getElementById("editDetailsLink");
+  if(editDetailsLink){
+    editDetailsLink.addEventListener("click",()=>{
+      go("zoneMode");
+    });
+  }
+
+  /* Creation */
+  document.getElementById("createWorkspace").addEventListener("click",()=>{
+    go("creating");
+    runCreation(false);
+  });
+
+  let creationTimer = null;
+
+  function runCreation(isQuick){
+    if(creationTimer){
+      clearInterval(creationTimer);
+      creationTimer = null;
+    }
+
+    const statuses = isQuick ? [
+      "Uploading your project…",
+      "Organising files and drawings…",
+      "Finishing quick setup…",
+      "All set — your file is ready."
+    ] : [
+      "Adding hierarchy…",
+      "Setting up services and teams…",
+      "Finishing workspace…",
+      "All set — everything is ready."
+    ];
+
+    let index = 0;
+    const statusEl = document.getElementById("creationStatus");
+    const ringProgress = document.getElementById("ringProgress");
+    const percentEl = document.getElementById("creationPercent");
+    const ringCircumference = 119.4;
+
+    function setProgress(stageIndex){
+      const percent = Math.round(((stageIndex + 1) / statuses.length) * 100);
+
+      if(ringProgress){
+        ringProgress.style.strokeDashoffset = ringCircumference - (ringCircumference * percent / 100);
+      }
+
+      if(percentEl){
+        percentEl.classList.add("switching");
+        setTimeout(()=>{
+          percentEl.textContent = percent + "%";
+          percentEl.classList.remove("switching");
+        }, 200);
+      }
+    }
+
+    function showCreationStage(stageIndex){
+      if(!statusEl) return;
+      statusEl.classList.add("switching");
+      setTimeout(()=>{
+        statusEl.textContent = statuses[stageIndex];
+        statusEl.classList.remove("switching");
+      }, 260);
+      setProgress(stageIndex);
+    }
+
+    if(statusEl){
+      statusEl.textContent = statuses[0];
+      statusEl.classList.remove("switching");
+    }
+
+    if(ringProgress){
+      ringProgress.style.transition = "none";
+      ringProgress.style.strokeDashoffset = ringCircumference;
+      void ringProgress.offsetWidth; // force reflow so the first fill still animates
+      ringProgress.style.transition = "";
+    }
+    if(percentEl) percentEl.textContent = "0%";
+    setTimeout(()=>setProgress(0), 60);
+
+    const finishCreation = () => {
+      if(creationTimer){
+        clearInterval(creationTimer);
+        creationTimer = null;
+      }
+      prepareSuccess(isQuick);
+      setTimeout(()=>go("success"), 320);
+    };
+
+    creationTimer = setInterval(()=>{
+      index++;
+
+      if(index < statuses.length){
+        showCreationStage(index);
+      }else{
+        finishCreation();
+      }
+    }, 850);
+  }
+
+  function prepareSuccess(isQuick){
+    const successFile = document.getElementById("successFile");
+
+    if(isQuick && state.uploadedFile){
+      document.getElementById("successFileName").textContent = state.uploadedFile.name;
+      document.getElementById("successFileType").textContent = state.uploadType;
+      successFile.classList.add("show");
+    }else{
+      successFile.classList.remove("show");
+    }
+
+    // Quick Setup only uploads a file — the full workspace (zones, levels,
+    // services) isn't built until the hierarchy is done, so don't call it
+    // "ready" until it actually is.
+    const titleEl = document.getElementById("successTitle");
+    const subEl = document.getElementById("successSub");
+    if(isQuick){
+      titleEl.textContent = "Quick setup ready";
+      subEl.textContent = "Your file is uploaded. Set up zones and levels anytime to complete the workspace.";
+    }else{
+      titleEl.textContent = "Workspace ready";
+      subEl.textContent = "Your project workspace has been created.";
+    }
+  }
+
+  function persistSetupForWorkspace(){
+    const servicesPerFloor = {};
+    Object.keys(state.servicesPerFloor).forEach(key=>{
+      servicesPerFloor[key] = Array.from(state.servicesPerFloor[key]);
+    });
+
+    function toFileArray(value){
+      if(Array.isArray(value)) return value.slice();
+      if(value) return [value];
+      return [];
+    }
+
+    // Files are keyed by type, each a list — a project can carry as many 2D
+    // drawings and 3D models as the user adds over time, not just one of
+    // each. Anything uploaded in an earlier session (before a "come back
+    // and finish the hierarchy" resume, or before adding another quick
+    // upload) is carried forward untouched.
+    const files = {
+      "2D Drawing": toFileArray(state.preservedFiles && state.preservedFiles["2D Drawing"]),
+      "3D BIM Model": toFileArray(state.preservedFiles && state.preservedFiles["3D BIM Model"])
+    };
+
+    if(state.uploadedFile){
+      files[state.uploadType].push({
+        id: "f" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+        name: state.uploadedFile.name,
+        dataUrl: state.uploadedFileDataUrl || null
+      });
+    }
+
+    const payload = {
+      projectName: state.workspaceName,
+      projectType: state.projectType,
+      files: files,
+      zones: state.zones,
+      levelsPerZone: state.levelsPerZone,
+      servicesPerFloor: servicesPerFloor
+    };
+
+    try{
+      localStorage.setItem("cf_workspace_setup", JSON.stringify(payload));
+    }catch(e){
+      // Storage unavailable, or the image pushed us over the quota — retry
+      // without the (large) image data so the rest of the handoff survives.
+      try{
+        Object.keys(payload.files).forEach(key=>{
+          payload.files[key].forEach(f=>{ f.dataUrl = null; });
+        });
+        localStorage.setItem("cf_workspace_setup", JSON.stringify(payload));
+      }catch(e2){
+        // Still unavailable (private mode) — the workspace falls back to its own defaults.
+      }
+    }
+  }
+
+  document.getElementById("openWorkspace").addEventListener("click",()=>{
+    toast("Workspace opened — redirecting...");
+    persistSetupForWorkspace();
+    setTimeout(()=>{
+      const params = new URLSearchParams();
+      if(state.workspaceName) params.set("project", state.workspaceName);
+      if(state.projectType) params.set("type", state.projectType);
+      const query = params.toString();
+      window.location.href = "project_workspace.html" + (query ? "?" + query : "");
+    }, 400);
+  });
+
+  document.querySelector(".close").addEventListener("click",()=>{
+    toast("Setup can be resumed later");
+  });
+
+  // Arriving here from the workspace's "Set up zones & levels" CTA —
+  // skip straight to the hierarchy steps instead of the intro, carrying
+  // forward the project name/type and any previously uploaded file.
+  (function resumeFromWorkspace(){
+    const params = new URLSearchParams(window.location.search);
+    const resumeStep = params.get("resume");
+    if(!resumeStep) return;
+
+    if(resumeStep === "projectType"){
+      // An existing user creating an *additional* project from the
+      // workspace's project switcher — nothing carries over, just skip
+      // the intro screen and let them pick a fresh project type.
+      bootToStep("projectType");
+      toast("Let's set up a new project");
+      return;
+    }
+
+    let priorPayload = null;
+    try{
+      const raw = localStorage.getItem("cf_workspace_setup");
+      priorPayload = raw ? JSON.parse(raw) : null;
+    }catch(e){
+      priorPayload = null;
+    }
+
+    const resumeProject = params.get("project") || (priorPayload && priorPayload.projectName) || "";
+    const resumeType = params.get("type") || (priorPayload && priorPayload.projectType) || "Construction";
+
+    state.workspaceName = resumeProject;
+    state.projectType = resumeType;
+    state.quick = (resumeStep === "quickUpload");
+    if(priorPayload && priorPayload.files){
+      state.preservedFiles = priorPayload.files;
+    }
+
+    const matchingCard = document.querySelector(`.project-card[data-project="${resumeType}"]`);
+    if(matchingCard) matchingCard.classList.add("selected");
+
+    const startProjectNameEl = document.getElementById("startProjectName");
+    if(startProjectNameEl) startProjectNameEl.textContent = resumeProject;
+
+    bootToStep(resumeStep);
+
+    if(resumeStep === "quickUpload"){
+      const preferredType = params.get("uploadType");
+      if(preferredType){
+        const typeBtn = document.querySelector(`.upload-type[data-uploadtype="${preferredType}"]`);
+        if(typeBtn) typeBtn.click();
+      }
+      toast(resumeProject ? `Add a file to ${resumeProject}` : "Add a file to your project");
+    }else{
+      toast(resumeProject ? `Continuing setup for ${resumeProject}` : "Continuing your hierarchy setup");
+    }
+  })();
+</script>
+
+</body>
+</html>
