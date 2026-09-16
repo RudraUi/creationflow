@@ -831,7 +831,12 @@
       height: 34px;
       color: #2563eb;
       filter: drop-shadow(0 6px 10px rgba(37, 99, 235, 0.35));
+      pointer-events: auto;
+      cursor: pointer;
+      transition: transform 0.15s ease;
     }
+
+    .arrival-pin i:hover { transform: scale(1.12) translateY(-2px); }
 
     .arrival-pin.drop {
       animation: pinDrop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
@@ -1976,27 +1981,6 @@
       line-height: 1.5;
     }
 
-    /* Offered when zones/levels haven't been set up yet (e.g. after a Quick Setup upload) */
-    .drawer-hierarchy-cta {
-      width: calc(100% - 12px);
-      margin: 10px 6px 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 7px;
-      padding: 9px 10px;
-      border: 1px dashed #93c5fd;
-      background: var(--primary-subtle);
-      color: var(--primary);
-      font-size: 12.5px;
-      font-weight: 650;
-      border-radius: 8px;
-      transition: 0.15s ease;
-    }
-
-    .drawer-hierarchy-cta:hover { background: #dbeafe; border-color: #60a5fa; }
-    .drawer-hierarchy-cta i { width: 14px; height: 14px; }
-
     .drawer-tree {
       flex: 1;
       overflow-y: auto;
@@ -2010,8 +1994,7 @@
       border-top: 1px solid var(--line-subtle);
       background: #ffffff;
       display: flex;
-      flex-direction: column;
-      gap: 6px;
+      gap: 8px;
     }
 
     .planner-node {
@@ -2412,7 +2395,7 @@
 
         <!-- Pin that "drops" onto the map once a location is chosen -->
         <div class="arrival-pin" id="arrivalPin">
-          <i data-lucide="map-pin"></i>
+          <i data-lucide="map-pin" title="Change location"></i>
           <span class="pin-ring"></span>
         </div>
 
@@ -2470,6 +2453,29 @@
           </div>
         </div>
 
+        <!-- Shown instead of the markup prompt when the user relocates the
+             pin after a boundary already exists — nothing is discarded
+             silently, the choice is always explicit. -->
+        <div class="simple-modal-backdrop hidden" id="locationChangedModal">
+          <div class="simple-card markup-card">
+            <div class="location-icon-wrap reveal-item">
+              <div class="location-icon-circle">
+                <i data-lucide="map-pin"></i>
+              </div>
+            </div>
+
+            <h3 class="reveal-item">Location updated</h3>
+            <p class="reveal-item" id="locationChangedSub">Your existing boundary is still here.</p>
+
+            <button class="btn-main reveal-item" id="btnContinueDrawing" style="width:100%;">
+              <span>Continue drawing on current</span>
+              <i data-lucide="arrow-right" style="width:16px;height:16px;"></i>
+            </button>
+
+            <button type="button" class="location-skip reveal-item" id="btnClearAfterRelocate">Clear boundary and start over</button>
+          </div>
+        </div>
+
         <!-- Step 3: Confirms the basic project setup is complete -->
         <div class="simple-modal-backdrop hidden" id="setupCompleteModal">
           <div class="simple-card complete-card">
@@ -2504,6 +2510,8 @@
               <span>Continue to Workspace</span>
               <i data-lucide="arrow-right" style="width:16px;height:16px;"></i>
             </button>
+
+            <button type="button" class="location-skip reveal-item" id="btnModifyLocationFromComplete">Discard markup &amp; modify location</button>
           </div>
         </div>
 
@@ -3053,14 +3061,37 @@
     function has3DFile() { return get3DFiles().length > 0; }
     function hasAnySetup() { return liveHasHierarchy || has2DFile() || has3DFile(); }
 
-    function persistLiveSetup() {
+    // Every edit in the Layer Hierarchy tree (renaming/adding/deleting a
+    // zone, level, service, or file) saves immediately — no separate
+    // save/discard step, and no buttons for it in the sidebar.
+    function persistHierarchyNow() {
+      const zones = [];
+      const levelsPerZone = {};
+      const servicesPerFloor = {};
+
+      (hierarchyData.children || []).filter(c => c.type === "zone").forEach((zoneNode, zIndex) => {
+        zones.push(zoneNode.name);
+        const levels = zoneNode.children || [];
+        levelsPerZone[zIndex] = levels.map(l => l.name);
+        levels.forEach((levelNode, lIndex) => {
+          servicesPerFloor[`${zIndex}_${lIndex}`] = (levelNode.children || []).map(s => s.name);
+        });
+      });
+
+      setupPayload.zones = zones;
+      setupPayload.levelsPerZone = levelsPerZone;
+      setupPayload.servicesPerFloor = servicesPerFloor;
       setupPayload.files = liveFiles;
+
       try {
         localStorage.setItem("cf_workspace_setup", JSON.stringify(setupPayload));
       } catch (e) {
         // Quota or storage unavailable — the change still applies for this
         // session, it just won't survive a reload.
       }
+
+      liveHasHierarchy = zones.length > 0;
+      updateTabLocks();
     }
 
     function showToast(msg) {
@@ -3259,6 +3290,10 @@
     const markupModalTitle = document.getElementById("markupModalTitle");
     const markupModalSub = document.getElementById("markupModalSub");
     const btnModalStart = document.getElementById("btnModalStart");
+    const locationChangedModal = document.getElementById("locationChangedModal");
+    const locationChangedSub = document.getElementById("locationChangedSub");
+    const btnContinueDrawing = document.getElementById("btnContinueDrawing");
+    const btnClearAfterRelocate = document.getElementById("btnClearAfterRelocate");
     const mapContainer = document.getElementById("mapContainer");
     const mapDrawLayer = document.getElementById("mapDrawLayer");
     const drawnPolygon = document.getElementById("drawnPolygon");
@@ -3300,6 +3335,25 @@
       }
     });
 
+    btnContinueDrawing.addEventListener("click", () => closeModal(locationChangedModal));
+    btnClearAfterRelocate.addEventListener("click", () => {
+      closeModal(locationChangedModal);
+      clearBoundary("Boundary cleared — draw a new one whenever you're ready.");
+    });
+
+    // The dropped pin doubles as the "change location" control once one has
+    // been picked — reopens the same search bar used the first time.
+    function reopenLocationSearch() {
+      mapSvg.classList.remove("svg-unfocused");
+      mapFadedMask.style.opacity = "0";
+      mapSearchBar.classList.add("show");
+      locationInput.value = "";
+      btnLocationGo.disabled = true;
+      locationSuggestions.classList.remove("show");
+      setTimeout(() => locationInput.focus(), 60);
+    }
+
+    arrivalPin.addEventListener("click", reopenLocationSearch);
 
     /* =========================================
        STEP 1: LOCATION FINDER
@@ -3396,18 +3450,25 @@
     // Picking a result (or hitting Enter) immediately flies the map there —
     // no extra confirm click needed.
     function confirmLocation(loc) {
+      // A boundary already drawn survives a location change — only an empty
+      // or in-progress drawing gets reset, since there's nothing there worth
+      // asking the user about.
+      const hadBoundary = workspaceState.boundarySaved && points.length >= 3;
+
       if (workspaceState.locationConfirmed) {
-        points = [];
-        isDrawing = false;
-        renderPoints();
-        statsLabel.textContent = "Site Area";
-        statsValue.textContent = "— m²";
-        workspaceState.boundarySaved = false;
-        hasShownBoundaryComplete = false;
-        mapContainer.classList.remove("boundary-editable");
-        updateTabLocks();
-        drawnPolygon.setAttribute("fill", "rgba(37, 99, 235, 0.15)");
-        drawnPolygon.setAttribute("stroke", "#2563eb");
+        if (!hadBoundary) {
+          points = [];
+          isDrawing = false;
+          renderPoints();
+          statsLabel.textContent = "Site Area";
+          statsValue.textContent = "— m²";
+          workspaceState.boundarySaved = false;
+          hasShownBoundaryComplete = false;
+          mapContainer.classList.remove("boundary-editable");
+          updateTabLocks();
+          drawnPolygon.setAttribute("fill", "rgba(37, 99, 235, 0.15)");
+          drawnPolygon.setAttribute("stroke", "#2563eb");
+        }
         arrivalPin.classList.remove("drop");
         arrivalPin.style.display = "none";
       }
@@ -3440,10 +3501,15 @@
           workspaceState.locationConfirmed = true;
           showToast(`Arrived at ${loc.name}`);
 
-          markupModalTitle.textContent = "You've arrived";
-          markupModalSub.textContent = `Now trace the outline of your project site around ${loc.name}.`;
-          btnModalStart.querySelector("span").textContent = "Start Markup";
-          openModal(markupModal);
+          if (hadBoundary) {
+            locationChangedSub.textContent = `Location moved to ${loc.name}. Your existing boundary is still here.`;
+            openModal(locationChangedModal);
+          } else {
+            markupModalTitle.textContent = "You've arrived";
+            markupModalSub.textContent = `Now trace the outline of your project site around ${loc.name}.`;
+            btnModalStart.querySelector("span").textContent = "Start Markup";
+            openModal(markupModal);
+          }
         }, 1550);
       }, 850);
     }
@@ -3650,7 +3716,7 @@
       statsValue.textContent = `${realArea.toLocaleString()} m²`;
     }
 
-    toolClear.addEventListener("click", () => {
+    function clearBoundary(message) {
       points = [];
       isDrawing = false;
       renderPoints();
@@ -3663,8 +3729,10 @@
       drawnPolygon.setAttribute("stroke", "#2563eb");
       mapTools.classList.remove("collapsed");
       updateTabLocks();
-      showToast("Boundary cleared");
-    });
+      showToast(message || "Boundary cleared");
+    }
+
+    toolClear.addEventListener("click", () => clearBoundary());
 
     document.getElementById("btnCompleteContinue").addEventListener("click", () => {
       closeModal(document.getElementById("setupCompleteModal"));
@@ -3673,6 +3741,12 @@
       setTimeout(() => {
         openModal(document.getElementById("plannerReadyModal"));
       }, 550);
+    });
+
+    document.getElementById("btnModifyLocationFromComplete").addEventListener("click", () => {
+      closeModal(document.getElementById("setupCompleteModal"));
+      clearBoundary("Markup discarded — pick a new location.");
+      reopenLocationSearch();
     });
 
     // Final step of the whole setup flow — nothing opens after this closes
@@ -4291,8 +4365,8 @@
           if (node.type === "libraryFile") {
             const entry = liveFiles[node.fileType].find(f => f.id === node.fileId);
             if (entry) entry.name = value;
-            persistLiveSetup();
           }
+          persistHierarchyNow();
           renderHierarchyTree();
         });
       });
@@ -4305,6 +4379,7 @@
           showAddInput(cw, `${childType.charAt(0).toUpperCase()}${childType.slice(1)} name…`, value => {
             node.children = node.children || [];
             node.children.push({ type: childType, name: value, children: [] });
+            persistHierarchyNow();
             renderHierarchyTree();
           });
         });
@@ -4320,8 +4395,6 @@
             const arr = liveFiles[node.fileType];
             const arrIdx = arr.findIndex(f => f.id === node.fileId);
             if (arrIdx > -1) arr.splice(arrIdx, 1);
-            persistLiveSetup();
-            updateTabLocks();
 
             if (node.fileType === "2D Drawing") {
               if (active2DFileId === node.fileId) active2DFileId = arr.length ? arr[arr.length - 1].id : null;
@@ -4338,6 +4411,7 @@
             }
           }
 
+          persistHierarchyNow();
           renderHierarchyTree();
           showToast(`${node.name} removed`);
         });
@@ -4361,6 +4435,31 @@
           renderHierarchyTree();
         });
       });
+
+      // Deleting zones one by one is tedious — this wipes the whole zone
+      // hierarchy in one go (Uncategorised files are untouched) and frees up
+      // "Create hierarchy" in the + popover again, since only one hierarchy
+      // is allowed to exist at a time.
+      const hasZones = (hierarchyData.children || []).some(c => c.type === "zone");
+      if (hasZones) {
+        const discardBtn = document.createElement("button");
+        discardBtn.type = "button";
+        discardBtn.className = "planner-node-delete";
+        discardBtn.title = "Discard hierarchy";
+        discardBtn.innerHTML = `<i data-lucide="trash-2"></i>`;
+        row.appendChild(discardBtn);
+        refreshIcons();
+
+        discardBtn.addEventListener("click", e => {
+          e.stopPropagation();
+          const ok = window.confirm("Discard the current hierarchy? All zones, levels and services will be removed. Uncategorised files are kept.");
+          if (!ok) return;
+          hierarchyData.children = (hierarchyData.children || []).filter(c => c.type !== "zone");
+          persistHierarchyNow();
+          renderHierarchyTree();
+          showToast("Hierarchy discarded");
+        });
+      }
 
       let childrenWrap = null;
       function ensureRootChildrenWrap() {
@@ -4398,6 +4497,7 @@
           showAddInput(cw, "Zone name…", value => {
             hierarchyData.children = hierarchyData.children || [];
             hierarchyData.children.push({ type: "zone", name: value, children: [] });
+            persistHierarchyNow();
             renderHierarchyTree();
           });
         });
@@ -4409,35 +4509,13 @@
 
     // Offers whichever setup path the project is missing — pinned to the
     // bottom of the drawer so it's always reachable, not buried at the end
-    // of a scrolling tree. Both options route to the wizard's own existing
-    // steps — no duplicate upload UI here.
+    // Every edit auto-saves (persistHierarchyNow), so there's nothing to
+    // show down here — the sidebar just ends after the tree.
     function updateHierarchyStickyFooter() {
       const footer = document.getElementById("hierarchyStickyFooter");
-      if (!footer || !hierarchyData) return;
-
-      const hasZones = (hierarchyData.children || []).some(child => child.type === "zone");
+      if (!footer) return;
       footer.innerHTML = "";
-
-      if (!hasZones) {
-        const cta = document.createElement("button");
-        cta.type = "button";
-        cta.className = "drawer-hierarchy-cta";
-        cta.innerHTML = `<i data-lucide="layers-3"></i><span>Set up hierarchy</span>`;
-        cta.addEventListener("click", goToHierarchyWizard);
-        footer.appendChild(cta);
-      }
-
-      // Always offered — a project can carry as many 2D/3D files as the
-      // user wants to add, not just one of each.
-      const uploadCta = document.createElement("button");
-      uploadCta.type = "button";
-      uploadCta.className = "drawer-hierarchy-cta";
-      uploadCta.innerHTML = `<i data-lucide="upload-cloud"></i><span>Upload a drawing</span>`;
-      uploadCta.addEventListener("click", () => goToQuickUploadWizard());
-      footer.appendChild(uploadCta);
-
-      footer.hidden = footer.children.length === 0;
-      refreshIcons();
+      footer.hidden = true;
     }
 
     function openHierarchyDrawer() {
