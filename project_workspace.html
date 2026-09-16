@@ -2450,6 +2450,7 @@
               <span>Start Markup</span>
             </button>
 
+            <button type="button" class="location-skip reveal-item" id="btnChangeLocationFromMarkup">Change location</button>
           </div>
         </div>
 
@@ -3333,6 +3334,11 @@
         activateTool("polygon");
         mapSearchBar.classList.add("show");
       }
+    });
+
+    document.getElementById("btnChangeLocationFromMarkup").addEventListener("click", () => {
+      closeModal(markupModal);
+      reopenLocationSearch();
     });
 
     btnContinueDrawing.addEventListener("click", () => closeModal(locationChangedModal));
