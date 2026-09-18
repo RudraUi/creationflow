@@ -3184,10 +3184,14 @@
     };
 
     if(state.uploadedFile){
+      // Each upload gets its own batch id, so the workspace tree gives it a
+      // separate "Uncategorised" folder instead of merging it into one
+      // shared folder — every Quick Setup run stays its own top-level entry.
       files[state.uploadType].push({
         id: "f" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
         name: state.uploadedFile.name,
-        dataUrl: state.uploadedFileDataUrl || null
+        dataUrl: state.uploadedFileDataUrl || null,
+        batch: "b" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
       });
     }
 

@@ -3059,8 +3059,8 @@
     let fileIdCounter = 0;
     function nextFileId() { return "f" + Date.now().toString(36) + (fileIdCounter++); }
     function toFileArray(value) {
-      if (Array.isArray(value)) return value.map(f => ({ id: f.id || nextFileId(), name: f.name, dataUrl: f.dataUrl || null }));
-      if (value) return [{ id: value.id || nextFileId(), name: value.name, dataUrl: value.dataUrl || null }];
+      if (Array.isArray(value)) return value.map(f => ({ id: f.id || nextFileId(), name: f.name, dataUrl: f.dataUrl || null, batch: f.batch || null }));
+      if (value) return [{ id: value.id || nextFileId(), name: value.name, dataUrl: value.dataUrl || null, batch: value.batch || null }];
       return [];
     }
 
@@ -4233,6 +4233,11 @@
     };
 
     let hierarchyData = null;
+    // One entry per upload batch — each Quick Setup run (or the initial
+    // upload) gets its own "Uncategorised" folder instead of everything
+    // merging into a single shared one. Rendered as a separate top-level
+    // tree, sibling to Site Boundary, never nested inside it.
+    let uncategorisedGroups = [];
 
     function initHierarchyData() {
       const payload = setupPayload;
@@ -4255,13 +4260,20 @@
         });
       }
 
-      // Every uploaded 2D/3D file that isn't part of a zone lives in one
-      // shared "Uncategorised" folder — as many as the user has added.
-      const uncategorisedChildren = [];
+      hierarchyData = root;
+
+      // Group every uploaded 2D/3D file that isn't part of a zone by which
+      // upload batch it came from — files without a batch id (from data
+      // saved before this existed) fall back to one shared "legacy" group.
+      const groupsByBatch = new Map();
       ["2D Drawing", "3D BIM Model"].forEach(fileType => {
         const icon = fileType === "3D BIM Model" ? "box" : "file-text";
         liveFiles[fileType].forEach(file => {
-          uncategorisedChildren.push({
+          const batchId = file.batch || "legacy";
+          if (!groupsByBatch.has(batchId)) {
+            groupsByBatch.set(batchId, { type: "uncategorised", name: "Uncategorised", children: [] });
+          }
+          groupsByBatch.get(batchId).children.push({
             type: "libraryFile",
             name: file.name || "Untitled",
             icon,
@@ -4272,12 +4284,7 @@
           });
         });
       });
-
-      if (uncategorisedChildren.length) {
-        root.children.push({ type: "uncategorised", name: "Uncategorised", children: uncategorisedChildren });
-      }
-
-      hierarchyData = root;
+      uncategorisedGroups = Array.from(groupsByBatch.values());
     }
 
     // Drops a freshly-uploaded file into the tree that's already built,
@@ -4475,10 +4482,10 @@
               updateThreeDFileLabel();
             }
 
-            // The Uncategorised folder only exists while it has files in it.
+            // Each Uncategorised group only exists while it has files in it.
             if (parentArray.length === 0) {
-              const folderIdx = hierarchyData.children.findIndex(c => c.children === parentArray);
-              if (folderIdx > -1) hierarchyData.children.splice(folderIdx, 1);
+              const folderIdx = uncategorisedGroups.findIndex(g => g.children === parentArray);
+              if (folderIdx > -1) uncategorisedGroups.splice(folderIdx, 1);
             }
           }
 
@@ -4498,6 +4505,14 @@
 
       const { row, toggle, labelEl, editBtn, addBtn } = createHierarchyRowParts(hierarchyData, 0);
       container.appendChild(row);
+
+      // Marks where Site Boundary's own content ends. Anything that belongs
+      // to it — the empty-state hint, or the zone list once a zone is added
+      // — is inserted before this marker, so it always lands right under
+      // Site Boundary even when added later (e.g. clicking "+" after the
+      // Uncategorised groups below have already been rendered).
+      const rootContentEnd = document.createComment("root-content-end");
+      container.appendChild(rootContentEnd);
 
       editBtn.addEventListener("click", e => {
         e.stopPropagation();
@@ -4539,7 +4554,7 @@
         if (emptyHint) emptyHint.remove();
         childrenWrap = document.createElement("div");
         childrenWrap.className = "planner-children";
-        container.appendChild(childrenWrap);
+        container.insertBefore(childrenWrap, rootContentEnd);
         toggle.classList.remove("spacer");
         toggle.innerHTML = `<i data-lucide="chevron-down"></i>`;
         toggle.addEventListener("click", () => {
@@ -4558,7 +4573,7 @@
         const empty = document.createElement("div");
         empty.className = "drawer-empty-hint";
         empty.textContent = "No zones yet — add your first zone to start building the hierarchy.";
-        container.appendChild(empty);
+        container.insertBefore(empty, rootContentEnd);
       }
 
       if (addBtn) {
@@ -4573,6 +4588,13 @@
           });
         });
       }
+
+      // Each upload batch's Uncategorised folder is its own top-level tree,
+      // stacked below Site Boundary as a plain sibling — never nested
+      // inside it, and never merged with any other batch's folder.
+      uncategorisedGroups.forEach(group => {
+        container.appendChild(renderHierarchyNode(group, 0, uncategorisedGroups));
+      });
 
       updateHierarchyStickyFooter();
       refreshIcons();
