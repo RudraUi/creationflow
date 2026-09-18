@@ -1,0 +1,2204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    .glass-pill {
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    /* defaults for the first set — every other set overrides these */
+    .tab-btn svg {
+      width: 34px;
+      height: 34px;
+      filter: none;
+    }
+    #preview-container svg {
+      width: 140px;
+      height: 140px;
+      filter: none;
+    }
+    body:not(.clay-set):not(.line-set):not(.clay3d-set):not(.neue-set):not(.linepro-set):not(.allblue-set):not(.linecolor-set) #preview-container .absolute { display: none; }
+    .set-tab.active { background: #2563eb; color: #fff; }
+    .clay-set .tab-btn svg,
+    .clay-set #preview-container svg {
+      filter: none;
+    }
+    .clay-set #preview-container svg {
+      width: 156px;
+      height: 156px;
+    }
+    .clay-set #preview-container .absolute { display: none; }
+    .line-set .tab-btn svg {
+      width: 40px;
+      height: 40px;
+      filter: drop-shadow(0 1px 2px rgba(30, 58, 95, 0.12));
+    }
+    .line-set #preview-container svg {
+      width: 180px !important;
+      height: 180px !important;
+      filter: drop-shadow(0 6px 18px rgba(30, 58, 95, 0.09));
+    }
+    .clay3d-set .tab-btn svg {
+      width: 36px;
+      height: 36px;
+      filter: none;
+    }
+    .clay3d-set #preview-container svg {
+      width: 140px !important;
+      height: 140px !important;
+      filter: none;
+    }
+    .clay3d-set #preview-container .absolute { display: none; }
+    .clay-blue-shade #preview-container .absolute {
+      display: block;
+      inset: -24px;
+      background: radial-gradient(ellipse at 58% 58%, rgba(59, 130, 246, .21) 0%, rgba(96, 165, 250, .12) 38%, rgba(219, 234, 254, .04) 62%, transparent 75%);
+      filter: blur(16px);
+      pointer-events: none;
+    }
+    .clay-blue-shade #preview-container svg {
+      position: relative;
+      filter: drop-shadow(0 8px 12px rgba(37, 99, 235, .10));
+    }
+    /* Fifth set: pure neumorphism, sitting on the plain white page */
+    .neue-set .tab-btn {
+      background: transparent !important;
+      box-shadow: none;
+    }
+    .neue-set .tab-btn[aria-selected="true"] {
+      background: #ffffff !important;
+      border-radius: 16px;
+      box-shadow: 3px 4px 9px rgba(138, 158, 190, 0.4), -3px -3px 8px rgba(255, 255, 255, 0.95);
+    }
+    .neue-set .tab-btn svg {
+      width: 34px;
+      height: 34px;
+      filter: none;
+    }
+    .neue-set #preview-container svg {
+      width: 150px !important;
+      height: 150px !important;
+      filter: none;
+    }
+    .neue-set #preview-container .absolute { display: none; }
+    .linepro-set .tab-btn svg {
+      width: 40px;
+      height: 40px;
+      filter: drop-shadow(0 1px 2px rgba(65, 90, 119, 0.10));
+    }
+    .linepro-set #preview-container svg {
+      width: 185px !important;
+      height: 185px !important;
+      filter: drop-shadow(0 12px 24px rgba(65, 90, 119, 0.08));
+    }
+    .linepro-set #preview-container .absolute {
+      opacity: 0.3;
+    }
+    .allblue-set .tab-btn svg {
+      width: 30px;
+      height: 30px;
+      filter: none;
+    }
+    .allblue-set #preview-container svg {
+      width: 132px !important;
+      height: 132px !important;
+      filter: none;
+    }
+    .allblue-set #preview-container .absolute { display: none; }
+    .linecolor-set .tab-btn svg {
+      width: 40px;
+      height: 40px;
+      filter: drop-shadow(0 1px 3px rgba(51, 65, 85, 0.12));
+    }
+    .linecolor-set #preview-container svg {
+      width: 185px !important;
+      height: 185px !important;
+      filter: drop-shadow(0 12px 24px rgba(51, 65, 85, 0.08));
+    }
+    .linecolor-set #preview-container .absolute {
+      opacity: 0.2;
+    }
+    .pop-set .tab-btn svg { width: 40px; height: 40px; filter: none; }
+    .pop-set #preview-container svg { width: 168px; height: 168px; filter: none; }
+    .pop-set #preview-container .absolute { display: none; }
+    .set-tab {
+      flex-shrink: 0;
+      white-space: nowrap;
+      font-size: 10px !important;
+      line-height: 1rem !important;
+      padding: 6px 8px !important;
+    }
+  </style>
+</head>
+<body class="bg-white text-slate-900 p-4 sm:p-6 antialiased font-sans min-h-screen">
+  <div class="max-w-6xl mx-auto flex min-h-[calc(100vh-3rem)] flex-col gap-4">
+    <div class="flex flex-nowrap gap-0.5 overflow-x-auto pb-1">
+      <button id="set-blue" class="set-tab active rounded-md px-3 py-2 text-xs font-semibold" onclick="selectIconSet('blue')">First set</button>
+      <button id="set-clay" class="set-tab rounded-md px-3 py-2 text-xs font-semibold text-slate-500" onclick="selectIconSet('clay')">Second set</button>
+      <button id="set-line" class="set-tab rounded-md px-3 py-2 text-xs font-semibold text-slate-500" onclick="selectIconSet('line')">Third set</button>
+      <button id="set-clay3d" class="set-tab rounded-md px-3 py-2 text-xs font-semibold text-slate-500" onclick="selectIconSet('clay3d')">Fourth set (3D Clay)</button>
+      <button id="set-claycolor" class="set-tab rounded-md px-3 py-2 text-xs font-semibold text-slate-500" onclick="selectIconSet('claycolor')">Clay Color</button>
+      <button id="set-neue" class="set-tab rounded-md px-3 py-2 text-xs font-semibold text-slate-500" onclick="selectIconSet('neue')">Fifth set (Neumorphic)</button>
+      <button id="set-linepro" class="set-tab rounded-md px-3 py-2 text-xs font-semibold text-slate-500" onclick="selectIconSet('linepro')">Sixth set (Line Pro)</button>
+      <button id="set-allblue" class="set-tab rounded-md px-3 py-2 text-xs font-semibold text-slate-500" onclick="selectIconSet('allblue')">Seventh set (Duotone)</button>
+      <button id="set-linecolor" class="set-tab rounded-md px-3 py-2 text-xs font-semibold text-slate-500" onclick="selectIconSet('linecolor')">Eighth set (Cool Line Pro)</button>
+      <button id="set-pop" class="set-tab rounded-md px-3 py-2 text-xs font-semibold text-slate-500" onclick="selectIconSet('pop')">Confetti Pop</button>
+    </div>
+    <div class="flex gap-1.5 overflow-x-auto pb-1" id="tabs" role="tablist" aria-label="Workspace sections"></div>
+
+    <!-- Live Preview Stage -->
+    <div id="stage" class="bg-white p-8 sm:p-12 flex flex-1 flex-col items-center justify-center min-h-[480px] text-center relative overflow-hidden">
+      <div id="preview-container" class="flex flex-col items-center">
+        <!-- Injected via script -->
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    /* ---------- First set: flat illustrations — filled shapes, one blue scale,
+       no strokes-as-outlines, no rotation. ---------- */
+    const C1 = { deep: '#1d4ed8', main: '#2563eb', mid: '#60a5fa', light: '#bfdbfe', pale: '#dbeafe' };
+
+    const FIRST_BODIES = {
+      drawing: `
+        <rect x="24" y="22" width="58" height="78" rx="10" fill="${C1.main}"/>
+        <rect x="34" y="32" width="22" height="5" rx="2.5" fill="${C1.mid}"/>
+        <path d="M34 48 H70 V62 M70 78 V90 H34 V48" fill="none" stroke="#ffffff" stroke-width="3.6" stroke-linejoin="round" stroke-linecap="round"/>
+        <path d="M70 78 a16 16 0 0 0 -16 -16" fill="none" stroke="${C1.light}" stroke-width="2.8" stroke-linecap="round"/>
+        <rect x="88" y="34" width="16" height="66" rx="8" fill="${C1.mid}"/>
+        <ellipse cx="96" cy="34" rx="8" ry="3.6" fill="${C1.light}"/>`,
+      model: `
+        <ellipse cx="64" cy="100" rx="40" ry="11" fill="${C1.pale}"/>
+        <path d="M64 20 L100 41 L64 62 L28 41 Z" fill="${C1.mid}"/>
+        <path d="M28 41 L64 62 L64 100 L28 79 Z" fill="${C1.main}"/>
+        <path d="M100 41 L100 79 L64 100 L64 62 Z" fill="${C1.deep}"/>`,
+      structure: `
+        <rect x="44" y="18" width="40" height="28" rx="9" fill="${C1.main}"/>
+        <rect x="52" y="27" width="24" height="4.5" rx="2.25" fill="${C1.light}"/>
+        <rect x="52" y="35" width="15" height="4.5" rx="2.25" fill="${C1.mid}"/>
+        <path d="M64 46 v10 M34 68 V56 H94 V68" fill="none" stroke="${C1.light}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="12" y="68" width="44" height="32" rx="10" fill="${C1.mid}"/>
+        <rect x="22" y="80" width="24" height="5" rx="2.5" fill="#ffffff"/>
+        <rect x="72" y="68" width="44" height="32" rx="10" fill="${C1.light}"/>
+        <rect x="82" y="80" width="24" height="5" rx="2.5" fill="#ffffff"/>`,
+      shared: `
+        <path d="M38 36 C50 18 78 18 90 36" fill="none" stroke="${C1.light}" stroke-width="4" stroke-linecap="round" stroke-dasharray="1 8"/>
+        <path d="M50 18 L82 27 L54 38 L57 28 Z" fill="${C1.main}"/>
+        <rect x="14" y="44" width="44" height="58" rx="11" fill="${C1.main}"/>
+        <rect x="24" y="58" width="24" height="5" rx="2.5" fill="#ffffff"/>
+        <rect x="24" y="70" width="18" height="5" rx="2.5" fill="${C1.mid}"/>
+        <rect x="24" y="82" width="24" height="5" rx="2.5" fill="${C1.mid}"/>
+        <rect x="70" y="44" width="44" height="58" rx="11" fill="${C1.light}"/>
+        <rect x="80" y="58" width="24" height="5" rx="2.5" fill="#ffffff"/>
+        <rect x="80" y="70" width="18" height="5" rx="2.5" fill="${C1.mid}"/>
+        <rect x="80" y="82" width="24" height="5" rx="2.5" fill="${C1.mid}"/>`,
+      survey: `
+        <rect x="16" y="28" width="96" height="70" rx="14" fill="${C1.light}"/>
+        <path d="M26 84 C36 62 56 52 76 56 C88 58 97 64 104 72" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round"/>
+        <path d="M34 92 C42 74 58 66 74 70 C84 72 92 76 100 84" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round"/>
+        <circle cx="62" cy="54" r="13" fill="${C1.main}"/>
+        <circle cx="62" cy="54" r="5" fill="#ffffff"/>
+        <path d="M62 28 v8 M62 72 v8 M36 54 h8 M80 54 h8" stroke="${C1.mid}" stroke-width="4.5" stroke-linecap="round"/>`,
+      "site-capture": `
+        <rect x="20" y="28" width="54" height="42" rx="9" fill="${C1.light}"/>
+        <path d="M28 62 L42 46 L51 56 L60 44 L70 62 Z" fill="#ffffff"/>
+        <path d="M52 58 l5 -9 h14 l5 9 Z" fill="${C1.main}"/>
+        <rect x="28" y="56" width="78" height="46" rx="13" fill="${C1.main}"/>
+        <circle cx="67" cy="79" r="15" fill="#ffffff"/>
+        <circle cx="67" cy="79" r="8" fill="${C1.mid}"/>
+        <circle cx="95" cy="68" r="4" fill="${C1.light}"/>`,
+      submission: `
+        <rect x="38" y="16" width="46" height="44" rx="8" fill="#ffffff" stroke="${C1.light}" stroke-width="3.5"/>
+        <rect x="48" y="30" width="26" height="5" rx="2.5" fill="${C1.mid}"/>
+        <rect x="48" y="42" width="18" height="5" rx="2.5" fill="${C1.light}"/>
+        <path d="M24 54 h80 a8 8 0 0 1 8 8 v32 a8 8 0 0 1 -8 8 H24 a8 8 0 0 1 -8 -8 V62 a8 8 0 0 1 8 -8 Z" fill="${C1.main}"/>
+        <path d="M17 60 L64 90 L111 60" fill="none" stroke="${C1.mid}" stroke-width="4.5" stroke-linejoin="round"/>
+        <circle cx="98" cy="42" r="14" fill="${C1.mid}"/>
+        <path d="M92 42 l4.5 4.5 L105 37" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`,
+      bimbox: `
+        <path d="M64 16 L82 26 L64 36 L46 26 Z" fill="${C1.mid}"/>
+        <path d="M46 26 L64 36 L64 52 L46 42 Z" fill="${C1.main}"/>
+        <path d="M82 26 L82 42 L64 52 L64 36 Z" fill="${C1.deep}"/>
+        <path d="M28 74 L16 66 L46 54 L64 60 Z" fill="${C1.light}"/>
+        <path d="M100 74 L112 66 L82 54 L64 60 Z" fill="${C1.light}"/>
+        <path d="M28 74 L64 88 L64 110 L28 96 Z" fill="${C1.main}"/>
+        <path d="M100 74 L100 96 L64 110 L64 88 Z" fill="${C1.deep}"/>
+        <path d="M64 60 L100 74 L64 88 L28 74 Z" fill="${C1.mid}"/>`,
+      files: `
+        <path d="M16 42 h30 l8 10 h48 a10 10 0 0 1 10 10 v6 H16 Z" fill="${C1.mid}"/>
+        <rect x="36" y="34" width="46" height="42" rx="7" fill="#ffffff" stroke="${C1.light}" stroke-width="3.5"/>
+        <rect x="46" y="48" width="26" height="5" rx="2.5" fill="${C1.light}"/>
+        <path d="M16 62 h96 v34 a10 10 0 0 1 -10 10 H26 a10 10 0 0 1 -10 -10 Z" fill="${C1.main}"/>
+        <rect x="52" y="78" width="24" height="5" rx="2.5" fill="${C1.mid}"/>`,
+      search: `
+        <rect x="16" y="20" width="60" height="80" rx="12" fill="${C1.light}"/>
+        <rect x="28" y="36" width="34" height="5.5" rx="2.75" fill="#ffffff"/>
+        <rect x="28" y="50" width="26" height="5.5" rx="2.75" fill="#ffffff"/>
+        <rect x="28" y="78" width="20" height="5.5" rx="2.75" fill="#ffffff"/>
+        <path d="M90 84 L106 100" stroke="${C1.deep}" stroke-width="11" stroke-linecap="round"/>
+        <circle cx="74" cy="66" r="25" fill="#ffffff"/>
+        <circle cx="74" cy="66" r="25" fill="none" stroke="${C1.main}" stroke-width="7"/>`,
+      issue: `
+        <rect x="18" y="50" width="92" height="54" rx="13" fill="${C1.light}"/>
+        <rect x="28" y="84" width="30" height="5.5" rx="2.75" fill="#ffffff"/>
+        <rect x="68" y="84" width="34" height="5.5" rx="2.75" fill="#ffffff"/>
+        <rect x="28" y="64" width="18" height="5.5" rx="2.75" fill="#ffffff"/>
+        <path d="M64 14 a21 21 0 0 1 21 21 c0 14.5 -21 35 -21 35 s-21 -20.5 -21 -35 a21 21 0 0 1 21 -21 Z" fill="${C1.main}"/>
+        <rect x="60" y="25" width="8" height="17" rx="4" fill="#ffffff"/>
+        <circle cx="64" cy="50" r="4.6" fill="#ffffff"/>`,
+      rfi: `
+        <path d="M16 30 a13 13 0 0 1 13 -13 h48 a13 13 0 0 1 13 13 v28 a13 13 0 0 1 -13 13 H45 L29 85 V71 h-0 a13 13 0 0 1 -13 -13 Z" fill="${C1.main}"/>
+        <path d="M44 38 a10 10 0 1 1 10 12 v3" fill="none" stroke="#ffffff" stroke-width="7" stroke-linecap="round"/>
+        <circle cx="54" cy="61" r="4.6" fill="#ffffff"/>
+        <rect x="66" y="76" width="46" height="28" rx="13" fill="${C1.light}"/>
+        <circle cx="78" cy="90" r="3.6" fill="${C1.mid}"/>
+        <circle cx="89" cy="90" r="3.6" fill="${C1.mid}"/>
+        <circle cx="100" cy="90" r="3.6" fill="${C1.mid}"/>`,
+      "field-note": `
+        <rect x="22" y="24" width="64" height="82" rx="13" fill="${C1.main}"/>
+        <rect x="42" y="16" width="24" height="16" rx="7" fill="${C1.mid}"/>
+        <rect x="34" y="52" width="40" height="5.5" rx="2.75" fill="#ffffff"/>
+        <rect x="34" y="66" width="40" height="5.5" rx="2.75" fill="${C1.light}"/>
+        <rect x="34" y="80" width="24" height="5.5" rx="2.75" fill="${C1.light}"/>
+        <g transform="rotate(32 98 64)">
+          <rect x="90" y="30" width="16" height="50" rx="6" fill="${C1.mid}"/>
+          <path d="M90 80 h16 l-8 14 Z" fill="${C1.deep}"/>
+        </g>`,
+      task: `
+        <rect x="14" y="22" width="78" height="82" rx="14" fill="#ffffff" stroke="${C1.light}" stroke-width="3.5"/>
+        <rect x="26" y="38" width="13" height="13" rx="4.5" fill="${C1.main}"/>
+        <rect x="48" y="42" width="32" height="5.5" rx="2.75" fill="${C1.light}"/>
+        <rect x="26" y="60" width="13" height="13" rx="4.5" fill="${C1.mid}"/>
+        <rect x="48" y="64" width="32" height="5.5" rx="2.75" fill="${C1.light}"/>
+        <rect x="26" y="82" width="13" height="13" rx="4.5" fill="${C1.light}"/>
+        <rect x="48" y="86" width="22" height="5.5" rx="2.75" fill="${C1.light}"/>
+        <circle cx="98" cy="86" r="20" fill="${C1.main}"/>
+        <path d="M89 86 l6 6 L108 79" fill="none" stroke="#ffffff" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>`,
+      planner: `
+        <rect x="16" y="26" width="96" height="80" rx="14" fill="#ffffff" stroke="${C1.light}" stroke-width="3.5"/>
+        <path d="M16 40 a14 14 0 0 1 14 -14 h68 a14 14 0 0 1 14 14 v8 H16 Z" fill="${C1.main}"/>
+        <rect x="38" y="14" width="10" height="20" rx="5" fill="${C1.mid}"/>
+        <rect x="80" y="14" width="10" height="20" rx="5" fill="${C1.mid}"/>
+        <rect x="28" y="62" width="40" height="11" rx="5.5" fill="${C1.main}"/>
+        <rect x="44" y="80" width="46" height="11" rx="5.5" fill="${C1.mid}"/>
+        <circle cx="96" cy="67.5" r="6" fill="${C1.light}"/>`
+    };
+
+    const SECTION_TEXT = {
+      drawing: { title: "No drawings added yet", subtitle: "Upload architectural plans, blueprints, or CAD sheets to get started." },
+      model: { title: "No 3D models added yet", subtitle: "Import IFC, Revit, or OBJ geometry files to inspect them in 3D." },
+      structure: { title: "No project structure added yet", subtitle: "Create discipline folders or upload directory structures to organize your project." },
+      shared: { title: "No shared files yet", subtitle: "Files and folders shared with your team or external partners will appear here." },
+      survey: { title: "No survey data added yet", subtitle: "Upload point clouds, topography maps, or surveyor coordinates." },
+      "site-capture": { title: "No site captures added yet", subtitle: "Upload site photos, 360° panoramas, and drone flight captures." },
+      submission: { title: "No submissions added yet", subtitle: "Track formal submittal packages, drawings for approval, and deliverables." },
+      bimbox: { title: "No BIMBOX assets yet", subtitle: "Official BIMBOX project deliverables and libraries will show up here." },
+      files: { title: "No files added yet", subtitle: "Drag and drop documents or click upload to populate this folder." },
+      search: { title: "No results found", subtitle: "Check for typos or try searching with different keywords." },
+      issue: { title: "No issues reported yet", subtitle: "Quality, safety, and punchlist issues will appear here when flagged." },
+      rfi: { title: "No RFIs submitted yet", subtitle: "Formal technical inquiries and requests for information will appear here." },
+      "field-note": { title: "No field notes recorded yet", subtitle: "Capture site observations, walkdown notes, and field photos here." },
+      task: { title: "No tasks created yet", subtitle: "Assign work packages, track progress, and organize execution tasks here." },
+      planner: { title: "No schedule planned yet", subtitle: "Build your project timeline, track critical paths, and schedule milestones." }
+    };
+
+    const SECTIONS = Object.fromEntries(Object.entries(SECTION_TEXT).map(([key, text]) => [key, {
+      title: text.title,
+      subtitle: text.subtitle,
+      svg: `<svg viewBox="0 0 128 128" class="w-24 h-24" fill="none">${FIRST_BODIES[key]}</svg>`
+    }]));
+
+    const CLAY_SYMBOLS = {
+      drawing: `<path d="M43 43h28l10 10v32H43z"/><path d="M71 43v11h10M50 65h24M50 73h18"/>`,
+      model: `<path d="M64 41l22 12-22 12-22-12zM42 53v24l22 12 22-12V53M64 65v24"/>`,
+      structure: `<circle cx="64" cy="43" r="6"/><circle cx="45" cy="80" r="6"/><circle cx="83" cy="80" r="6"/><path d="M64 49v13M45 74v-8h38v8"/>`,
+      shared: `<circle cx="46" cy="64" r="7"/><circle cx="81" cy="47" r="7"/><circle cx="81" cy="81" r="7"/><path d="M52 60l23-11M52 68l23 11"/>`,
+      issue: `<circle cx="64" cy="64" r="25"/><path d="M64 49v18M64 77h.1"/>`,
+      rfi: `<path d="M46 40h36a7 7 0 0 1 7 7v21a7 7 0 0 1-7 7H65l-13 10V75h-6a7 7 0 0 1-7-7V47a7 7 0 0 1 7-7z"/><path d="M58 52c1-8 14-7 14 1 0 6-7 6-7 11M65 70h.1"/>`,
+      'field-note': `<rect x="43" y="39" width="42" height="50" rx="7"/><path d="M53 54h22M53 64h22M53 74h15"/>`,
+      task: `<rect x="42" y="41" width="44" height="46" rx="10"/><path d="M53 62l7 7 15-17M53 78h23"/>`,
+      planner: `<rect x="40" y="43" width="48" height="43" rx="8"/><path d="M40 56h48M51 39v9M77 39v9M51 67h8M68 67h8M51 77h8"/>`,
+      survey: `<circle cx="64" cy="62" r="22"/><circle cx="64" cy="62" r="7"/><path d="M64 33v10M64 81v10M35 62h10M83 62h10"/>`,
+      'site-capture': `<rect x="38" y="48" width="52" height="34" rx="9"/><path d="M50 48l5-8h18l5 8"/><circle cx="64" cy="65" r="11"/>`,
+      submission: `<rect x="40" y="45" width="48" height="34" rx="8"/><path d="M41 49l23 17 23-17M64 35v18M56 43l8-8 8 8"/>`,
+      bimbox: `<path d="M64 36l25 13-25 13-25-13z"/><path d="M39 62l25 13 25-13"/><path d="M39 75l25 13 25-13"/>`,
+      files: `<path d="M38 49h20l6 7h26v31H38z"/><path d="M45 62h38"/>`,
+      search: `<circle cx="59" cy="58" r="20"/><path d="M74 73l16 16"/>`
+    };
+
+    /* Second set: one solid clay tile — vivid blue body, top sheen, white glyph on it */
+    function claySvg(key) {
+      const id = `clay-${key}`;
+      return `<svg viewBox="0 0 128 128" class="w-24 h-24" fill="none">
+        <defs>
+          <linearGradient id="${id}-body" x1="0.15" y1="0" x2="0.85" y2="1">
+            <stop offset="0%" stop-color="#7fb4ff"/>
+            <stop offset="45%" stop-color="#3b82f6"/>
+            <stop offset="100%" stop-color="#1b48bd"/>
+          </linearGradient>
+          <linearGradient id="${id}-sheen" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#ffffff" stop-opacity="0.5"/>
+            <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+          </linearGradient>
+          <radialGradient id="${id}-floor" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#1e3a8a" stop-opacity="0.3"/>
+            <stop offset="100%" stop-color="#1e3a8a" stop-opacity="0"/>
+          </radialGradient>
+          <clipPath id="${id}-clip"><rect x="16" y="12" width="96" height="96" rx="30"/></clipPath>
+          <filter id="${id}-drop" x="-40%" y="-40%" width="180%" height="190%">
+            <feDropShadow dx="0" dy="9" stdDeviation="7" flood-color="#1c3f9e" flood-opacity="0.32"/>
+          </filter>
+          <filter id="${id}-emboss" x="-30%" y="-30%" width="160%" height="160%">
+            <feDropShadow dx="0" dy="2.5" stdDeviation="2" flood-color="#0f2f7d" flood-opacity="0.45"/>
+          </filter>
+        </defs>
+        <ellipse cx="64" cy="117" rx="34" ry="6.5" fill="url(#${id}-floor)"/>
+        <rect x="16" y="12" width="96" height="96" rx="30" fill="url(#${id}-body)" filter="url(#${id}-drop)"/>
+        <g clip-path="url(#${id}-clip)">
+          <ellipse cx="64" cy="2" rx="72" ry="42" fill="url(#${id}-sheen)"/>
+          <ellipse cx="64" cy="126" rx="66" ry="34" fill="#0f2f7d" opacity="0.16"/>
+          <ellipse cx="41" cy="31" rx="13" ry="7" transform="rotate(-27 41 31)" fill="#ffffff" opacity="0.3"/>
+        </g>
+        <rect x="17.6" y="13.6" width="92.8" height="92.8" rx="28.4" fill="none" stroke="#ffffff" stroke-opacity="0.38" stroke-width="1.6"/>
+        <g stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none" filter="url(#${id}-emboss)">${CLAY_SYMBOLS[key]}</g>
+      </svg>`;
+    }
+
+    const CLAY_SECTIONS = Object.fromEntries(Object.entries(SECTIONS).map(([key, item]) => [key, {
+      title: item.title,
+      subtitle: item.subtitle,
+      svg: claySvg(key)
+    }]));
+
+    const LINE_SVGS = {
+      drawing: `<svg viewBox="0 0 128 128" class="w-24 h-24" fill="none">
+        <line x1="24" y1="96" x2="104" y2="96" stroke="#1e3a5f" stroke-width="1.3" stroke-linecap="round"/>
+        <line x1="108" y1="96" x2="112" y2="96" stroke="#94a3b8" stroke-width="1.3" stroke-linecap="round"/>
+        <rect x="36" y="32" width="54" height="64" rx="4" fill="#ffffff" stroke="#1e3a5f" stroke-width="1.3"/>
+        <path d="M44 44 h22 v20 h-12 v16 h-10 z" fill="#f8fafc" stroke="#1e3a5f" stroke-width="1.1" stroke-linejoin="round"/>
+        <path d="M54 64 a10 10 0 0 1 10 10" fill="none" stroke="#2563eb" stroke-width="1.1" stroke-dasharray="2.5 2.5"/>
+        <line x1="54" y1="64" x2="54" y2="74" stroke="#2563eb" stroke-width="1.1"/>
+        <line x1="44" y1="40" x2="66" y2="40" stroke="#2563eb" stroke-width="1.0" stroke-linecap="round"/>
+        <polygon points="68,96 98,96 98,58" fill="#eff6ff" stroke="#2563eb" stroke-width="1.3" stroke-linejoin="round"/>
+        <polygon points="76,92 94,92 94,74" fill="#ffffff" stroke="#2563eb" stroke-width="1.0"/>
+        <line x1="28" y1="96" x2="34" y2="78" stroke="#1e3a5f" stroke-width="1.3" stroke-linecap="round"/>
+        <polygon points="34,78 36,72 38,78" fill="#2563eb"/>
+      </svg>`,
+      model: `<svg viewBox="0 0 128 128" class="w-24 h-24" fill="none">
+        <line x1="24" y1="96" x2="104" y2="96" stroke="#1e3a5f" stroke-width="1.3" stroke-linecap="round"/>
+        <path d="M22 92 a3 3 0 0 1 5 -1 a5 5 0 0 1 8 1 a3 3 0 0 1 3 4 h-16 z" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.0" stroke-linejoin="round"/>
+        <g transform="translate(0, 4)">
+          <polygon points="64,30 88,44 64,58 40,44" fill="#ffffff" stroke="#1e3a5f" stroke-width="1.3" stroke-linejoin="round"/>
+          <polygon points="40,44 64,58 64,84 40,70" fill="#f8fafc" stroke="#1e3a5f" stroke-width="1.3" stroke-linejoin="round"/>
+          <polygon points="64,58 88,44 88,70 64,84" fill="#ffffff" stroke="#1e3a5f" stroke-width="1.3" stroke-linejoin="round"/>
+          <line x1="52" y1="51" x2="52" y2="77" stroke="#cbd5e1" stroke-width="1.0"/>
+          <line x1="76" y1="51" x2="76" y2="77" stroke="#cbd5e1" stroke-width="1.0"/>
+          <ellipse cx="64" cy="56" rx="42" ry="18" fill="none" stroke="#2563eb" stroke-width="1.2" stroke-dasharray="4 3" transform="rotate(-15 64 56)"/>
+          <polygon points="90,30 98,34 90,38 82,34" fill="#3b82f6"/>
+          <polygon points="82,34 90,38 90,46 82,42" fill="#2563eb"/>
+          <polygon points="90,38 98,34 98,42 90,46" fill="#1d4ed8"/>
+        </g>
+      </svg>`,
+      structure: `<svg viewBox="0 0 128 128" class="w-24 h-24" fill="none">
+        <line x1="24" y1="96" x2="104" y2="96" stroke="#1e3a5f" stroke-width="1.3" stroke-linecap="round"/>
+        <rect x="48" y="28" width="32" height="20" rx="4" fill="#2563eb" stroke="#2563eb" stroke-width="1.1"/>
+        <rect x="54" y="34" width="20" height="8" rx="1.5" fill="#ffffff"/>
+        <line x1="64" y1="48" x2="64" y2="62" stroke="#1e3a5f" stroke-width="1.3"/>
+        <path d="M38 72 V62 H90 V72" fill="none" stroke="#1e3a5f" stroke-width="1.3" stroke-linejoin="round"/>
+        <line x1="64" y1="62" x2="64" y2="72" stroke="#1e3a5f" stroke-width="1.3"/>
+        <rect x="25" y="72" width="26" height="18" rx="3" fill="#ffffff" stroke="#1e3a5f" stroke-width="1.2"/>
+        <line x1="30" y1="81" x2="45" y2="81" stroke="#94a3b8" stroke-width="1.1" stroke-linecap="round"/>
+        <rect x="51" y="72" width="26" height="18" rx="3" fill="#ffffff" stroke="#1e3a5f" stroke-width="1.2"/>
+        <circle cx="64" cy="81" r="2.5" fill="#2563eb"/>
+        <rect x="77" y="72" width="26" height="18" rx="3" fill="#ffffff" stroke="#1e3a5f" stroke-width="1.2"/>
+        <line x1="82" y1="81" x2="97" y2="81" stroke="#94a3b8" stroke-width="1.1" stroke-linecap="round"/>
+        <path d="M98 96 c0 -5 5 -7 7 -5 c1 3 -2 5 -7 5 z" fill="#2563eb"/>
+      </svg>`,
+      shared: `<svg viewBox="0 0 128 128" class="w-24 h-24" fill="none">
+        <line x1="24" y1="96" x2="104" y2="96" stroke="#1e3a5f" stroke-width="1.3" stroke-linecap="round"/>
+        <line x1="40" y1="96" x2="40" y2="64" stroke="#1e3a5f" stroke-width="1.3"/>
+        <rect x="36" y="94" width="8" height="2" fill="#1e3a5f"/>
+        <circle cx="40" cy="52" r="13" fill="#ffffff" stroke="#1e3a5f" stroke-width="1.3"/>
+        <circle cx="40" cy="48" r="3.5" fill="#1e3a5f"/>
+        <path d="M33 58 c1 -4 4 -5 7 -5 s6 1 7 5" fill="#1e3a5f"/>
+        <line x1="88" y1="96" x2="88" y2="64" stroke="#1e3a5f" stroke-width="1.3"/>
+        <rect x="84" y="94" width="8" height="2" fill="#1e3a5f"/>
+        <circle cx="88" cy="52" r="13" fill="#ffffff" stroke="#1e3a5f" stroke-width="1.3"/>
+        <circle cx="88" cy="48" r="3.5" fill="#1e3a5f"/>
+        <path d="M81 58 c1 -4 4 -5 7 -5 s6 1 7 5" fill="#1e3a5f"/>
+        <path d="M42 42 C 54 22, 74 22, 86 42" fill="none" stroke="#2563eb" stroke-width="1.2" stroke-dasharray="3 3"/>
+        <g transform="translate(64, 25) rotate(15)">
+          <polygon points="-2,-7 12,0 -2,7 1.5,0" fill="#2563eb"/>
+          <line x1="1.5" y1="0" x2="-2" y2="7" stroke="#1d4ed8" stroke-width="0.8"/>
+        </g>
+      </svg>`,
+      survey: `<svg viewBox="0 0 128 128" class="w-24 h-24" fill="none">
+        <path d="M22 96 Q 50 93 75 96 T 106 96" fill="none" stroke="#1e3a5f" stroke-width="1.3" stroke-linecap="round"/>
+        <line x1="44" y1="58" x2="32" y2="96" stroke="#1e3a5f" stroke-width="1.3" stroke-linecap="round"/>
+        <line x1="44" y1="58" x2="44" y2="95" stroke="#1e3a5f" stroke-width="1.3" stroke-linecap="round"/>
+        <line x1="44" y1="58" x2="56" y2="96" stroke="#1e3a5f" stroke-width="1.3" stroke-linecap="round"/>
+        <rect x="38" y="56" width="12" height="2.5" rx="1" fill="#1e3a5f"/>
+        <rect x="40" y="44" width="8" height="12" rx="2" fill="#ffffff" stroke="#1e3a5f" stroke-width="1.2"/>
+        <polygon points="46,47 55,44 55,52 46,49" fill="#2563eb" stroke="#1e3a5f" stroke-width="1.1"/>
+        <line x1="56" y1="48" x2="88" y2="48" stroke="#2563eb" stroke-width="1.1" stroke-dasharray="3 3"/>
+        <line x1="88" y1="38" x2="88" y2="96" stroke="#1e3a5f" stroke-width="1.3" stroke-linecap="round"/>
+        <polygon points="88,42 95,48 88,54 81,48" fill="#2563eb"/>
+        <circle cx="88" cy="48" r="1.8" fill="#ffffff"/>
+        <path d="M24 38 a3 3 0 0 1 5 -1 a5 5 0 0 1 7 1 a3 3 0 0 1 2 3 h-14 z" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.0"/>
+      </svg>`,
+      'site-capture': `<svg viewBox="0 0 128 128" class="w-24 h-24" fill="none">
+        <line x1="24" y1="96" x2="104" y2="96" stroke="#1e3a5f" stroke-width="1.3" stroke-linecap="round"/>
+        <line x1="64" y1="64" x2="46" y2="96" stroke="#1e3a5f" stroke-width="1.3" stroke-linecap="round"/>
+        <line x1="64" y1="64" x2="64" y2="96" stroke="#1e3a5f" stroke-width="1.3" stroke-linecap="round"/>
+        <line x1="64" y1="64" x2="82" y2="96" stroke="#1e3a5f" stroke-width="1.3" stroke-linecap="round"/>
+        <line x1="53" y1="82" x2="75" y2="82" stroke="#1e3a5f" stroke-width="1.0"/>
+        <rect x="46" y="44" width="36" height="22" rx="4" fill="#ffffff" stroke="#1e3a5f" stroke-width="1.3"/>
+        <path d="M54 44 L58 39 H70 L74 44 Z" fill="#1e3a5f"/>
+        <circle cx="64" cy="55" r="8" fill="#ffffff" stroke="#1e3a5f" stroke-width="1.3"/>
+        <circle cx="64" cy="55" r="4.5" fill="#2563eb"/>
+        <circle cx="62.5" cy="53.5" r="1.2" fill="#ffffff"/>
+        <path d="M34 50 A 34 20 0 0 1 94 50" fill="none" stroke="#2563eb" stroke-width="1.1" stroke-dasharray="3 3"/>
+        <g transform="translate(86, 32) rotate(14)">
+          <rect x="0" y="0" width="16" height="14" rx="2" fill="#ffffff" stroke="#1e3a5f" stroke-width="1.1"/>
+          <circle cx="8" cy="6" r="2.2" fill="#2563eb"/>
+        </g>
+      </svg>`,
+      submission: `<svg viewBox="0 0 128 128" class="w-24 h-24" fill="none">
+        <line x1="24" y1="96" x2="104" y2="96" stroke="#1e3a5f" stroke-width="1.3" stroke-linecap="round"/>
+        <path d="M38 72 L42 94 H86 L90 72" fill="#ffffff" stroke="#1e3a5f" stroke-width="1.3" stroke-linejoin="round"/>
+        <path d="M54 72 V78 H74 V72" fill="none" stroke="#1e3a5f" stroke-width="1.1"/>
+        <rect x="44" y="66" width="40" height="22" rx="2" fill="#ffffff" stroke="#1e3a5f" stroke-width="1.1"/>
+        <line x1="50" y1="74" x2="68" y2="74" stroke="#94a3b8" stroke-width="1.0"/>
+        <circle cx="42" cy="74" r="5" fill="#2563eb"/>
+        <path d="M39.5 74 L41.5 76 L44.5 72.5" stroke="#ffffff" stroke-width="1.1" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M64 66 C 64 48, 78 46, 74 34" fill="none" stroke="#2563eb" stroke-width="1.2" stroke-dasharray="3 3"/>
+        <polygon points="72,22 88,31 72,36 75,29" fill="#2563eb" stroke="#1e3a5f" stroke-width="1.1" stroke-linejoin="round"/>
+      </svg>`,
+      bimbox: `<svg viewBox="0 0 128 128" class="w-24 h-24" fill="none">
+        <line x1="24" y1="96" x2="104" y2="96" stroke="#1e3a5f" stroke-width="1.3" stroke-linecap="round"/>
+        <polygon points="40,68 64,80 88,68 88,88 64,96 40,88" fill="#ffffff" stroke="#1e3a5f" stroke-width="1.3" stroke-linejoin="round"/>
+        <line x1="64" y1="80" x2="64" y2="96" stroke="#1e3a5f" stroke-width="1.3"/>
+        <polygon points="64,80 88,68 88,88 64,96" fill="#f8fafc" stroke="#1e3a5f" stroke-width="1.3" stroke-linejoin="round"/>
+        <polygon points="40,68 28,58 48,52 64,62" fill="#ffffff" stroke="#1e3a5f" stroke-width="1.1" stroke-linejoin="round"/>
+        <polygon points="88,68 100,58 80,52 64,62" fill="#ffffff" stroke="#1e3a5f" stroke-width="1.1" stroke-linejoin="round"/>
+        <polygon points="64,30 78,38 64,46 50,38" fill="#3b82f6" stroke="#2563eb" stroke-width="1.1" stroke-linejoin="round"/>
+        <polygon points="50,38 64,46 64,60 50,52" fill="#2563eb" stroke="#1d4ed8" stroke-width="1.1" stroke-linejoin="round"/>
+        <polygon points="64,46 78,38 78,52 64,60" fill="#1d4ed8" stroke="#1e40af" stroke-width="1.1" stroke-linejoin="round"/>
+        <line x1="44" y1="36" x2="48" y2="39" stroke="#2563eb" stroke-width="1.4" stroke-linecap="round"/>
+        <line x1="84" y1="36" x2="80" y2="39" stroke="#2563eb" stroke-width="1.4" stroke-linecap="round"/>
+      </svg>`,
+      files: `<svg viewBox="0 0 128 128" class="w-24 h-24" fill="none">
+        <line x1="24" y1="96" x2="104" y2="96" stroke="#1e3a5f" stroke-width="1.3" stroke-linecap="round"/>
+        <polygon points="44,66 64,76 84,66 84,88 64,96 44,88" fill="#ffffff" stroke="#1e3a5f" stroke-width="1.3" stroke-linejoin="round"/>
+        <line x1="64" y1="76" x2="64" y2="96" stroke="#1e3a5f" stroke-width="1.3"/>
+        <polygon points="44,66 32,58 50,54 64,61" fill="#ffffff" stroke="#1e3a5f" stroke-width="1.1" stroke-linejoin="round"/>
+        <polygon points="84,66 96,58 78,54 64,61" fill="#ffffff" stroke="#1e3a5f" stroke-width="1.1" stroke-linejoin="round"/>
+        <polygon points="44,66 64,76 60,82 38,72" fill="#ffffff" stroke="#1e3a5f" stroke-width="1.1" stroke-linejoin="round"/>
+        <polygon points="84,66 64,76 68,82 90,72" fill="#ffffff" stroke="#1e3a5f" stroke-width="1.1" stroke-linejoin="round"/>
+        <path d="M64 68 C 64 54, 76 54, 76 44 C 76 34, 56 34, 56 46 C 56 56, 70 54, 70 32" fill="none" stroke="#2563eb" stroke-width="1.2" stroke-dasharray="3 3"/>
+        <path d="M68 24 L74 20 L76 27 L70 27 Z" fill="#2563eb" stroke="#2563eb" stroke-width="0.8"/>
+        <circle cx="75" cy="21" r="1.3" fill="#ffffff"/>
+      </svg>`,
+      search: `<svg viewBox="0 0 128 128" class="w-24 h-24" fill="none">
+        <line x1="24" y1="96" x2="104" y2="96" stroke="#1e3a5f" stroke-width="1.3" stroke-linecap="round"/>
+        <ellipse cx="36" cy="94" rx="4" ry="2" fill="#1e3a5f"/>
+        <ellipse cx="43" cy="95" rx="2" ry="1.2" fill="#94a3b8"/>
+        <line x1="76" y1="76" x2="98" y2="94" stroke="#1e3a5f" stroke-width="2.6" stroke-linecap="round"/>
+        <line x1="82" y1="81" x2="94" y2="91" stroke="#cbd5e1" stroke-width="1.2" stroke-linecap="round"/>
+        <circle cx="60" cy="60" r="22" fill="#ffffff" stroke="#1e3a5f" stroke-width="1.4"/>
+        <path d="M46 52 A 16 16 0 0 1 64 42" fill="none" stroke="#cbd5e1" stroke-width="1.2" stroke-linecap="round"/>
+        <ellipse cx="60" cy="65" rx="10" ry="4.5" fill="none" stroke="#94a3b8" stroke-width="1.0" stroke-dasharray="2.5 2.5"/>
+        <path d="M58 47 C 58 41, 66 41, 66 46 C 66 50, 61 51, 61 55" fill="none" stroke="#2563eb" stroke-width="1.4" stroke-linecap="round"/>
+        <circle cx="61" cy="60" r="1.2" fill="#2563eb"/>
+      </svg>`,
+      issue: `<svg viewBox="0 0 128 128" class="w-24 h-24" fill="none">
+        <line x1="24" y1="96" x2="104" y2="96" stroke="#1e3a5f" stroke-width="1.3" stroke-linecap="round"/>
+        <path d="M46 96 L64 72 L82 96" fill="none" stroke="#1e3a5f" stroke-width="1.3" stroke-linejoin="round"/>
+        <line x1="53" y1="86" x2="75" y2="86" stroke="#1e3a5f" stroke-width="1.1"/>
+        <line x1="64" y1="72" x2="64" y2="34" stroke="#1e3a5f" stroke-width="1.3"/>
+        <polygon points="64,26 88,66 40,66" fill="#ffffff" stroke="#1e3a5f" stroke-width="1.3" stroke-linejoin="round"/>
+        <polygon points="64,35 80,61 48,61" fill="#eff6ff" stroke="#2563eb" stroke-width="1.1" stroke-linejoin="round"/>
+        <line x1="64" y1="43" x2="64" y2="51" stroke="#2563eb" stroke-width="1.6" stroke-linecap="round"/>
+        <circle cx="64" cy="56" r="1.3" fill="#2563eb"/>
+        <path d="M86 96 C 87 91, 91 90, 93 92 C 91 94, 88 96, 86 96 Z" fill="#2563eb"/>
+      </svg>`,
+      rfi: `<svg viewBox="0 0 128 128" class="w-24 h-24" fill="none">
+        <line x1="24" y1="96" x2="104" y2="96" stroke="#1e3a5f" stroke-width="1.3" stroke-linecap="round"/>
+        <line x1="64" y1="96" x2="64" y2="54" stroke="#1e3a5f" stroke-width="1.4" stroke-linecap="round"/>
+        <line x1="56" y1="62" x2="64" y2="54" stroke="#1e3a5f" stroke-width="1.2"/>
+        <rect x="42" y="38" width="44" height="28" rx="6" fill="#ffffff" stroke="#1e3a5f" stroke-width="1.3"/>
+        <path d="M42 42 L64 56 L86 42" fill="none" stroke="#1e3a5f" stroke-width="1.1" stroke-linejoin="round"/>
+        <line x1="86" y1="56" x2="86" y2="32" stroke="#2563eb" stroke-width="1.3"/>
+        <polygon points="86,32 98,37 86,42" fill="#2563eb"/>
+        <path d="M60 26 C 60 19, 68 19, 68 24 C 68 28, 64 29, 64 33" fill="none" stroke="#2563eb" stroke-width="1.4" stroke-linecap="round"/>
+        <circle cx="64" cy="37" r="1.1" fill="#2563eb"/>
+      </svg>`,
+      'field-note': `<svg viewBox="0 0 128 128" class="w-24 h-24" fill="none">
+        <line x1="24" y1="96" x2="104" y2="96" stroke="#1e3a5f" stroke-width="1.3" stroke-linecap="round"/>
+        <rect x="42" y="36" width="44" height="60" rx="4" fill="#ffffff" stroke="#1e3a5f" stroke-width="1.3"/>
+        <line x1="38" y1="44" x2="46" y2="44" stroke="#1e3a5f" stroke-width="1.3" stroke-linecap="round"/>
+        <line x1="38" y1="54" x2="46" y2="54" stroke="#1e3a5f" stroke-width="1.3" stroke-linecap="round"/>
+        <line x1="38" y1="64" x2="46" y2="64" stroke="#1e3a5f" stroke-width="1.3" stroke-linecap="round"/>
+        <line x1="38" y1="74" x2="46" y2="74" stroke="#1e3a5f" stroke-width="1.3" stroke-linecap="round"/>
+        <line x1="38" y1="84" x2="46" y2="84" stroke="#1e3a5f" stroke-width="1.3" stroke-linecap="round"/>
+        <line x1="52" y1="48" x2="76" y2="48" stroke="#94a3b8" stroke-width="1.0" stroke-linecap="round"/>
+        <line x1="52" y1="58" x2="72" y2="58" stroke="#94a3b8" stroke-width="1.0" stroke-linecap="round"/>
+        <line x1="52" y1="68" x2="78" y2="68" stroke="#94a3b8" stroke-width="1.0" stroke-linecap="round"/>
+        <polygon points="68,34 76,34 76,50 72,46 68,50" fill="#2563eb"/>
+        <line x1="88" y1="96" x2="80" y2="58" stroke="#1e3a5f" stroke-width="1.3" stroke-linecap="round"/>
+        <polygon points="80,58 78,52 83,55" fill="#2563eb"/>
+      </svg>`,
+      task: `<svg viewBox="0 0 128 128" class="w-24 h-24" fill="none">
+        <line x1="24" y1="96" x2="104" y2="96" stroke="#1e3a5f" stroke-width="1.3" stroke-linecap="round"/>
+        <rect x="40" y="34" width="48" height="62" rx="5" fill="#ffffff" stroke="#1e3a5f" stroke-width="1.3"/>
+        <rect x="54" y="30" width="20" height="7" rx="2" fill="#1e3a5f"/>
+        <circle cx="64" cy="33.5" r="1.2" fill="#ffffff"/>
+        <rect x="48" y="46" width="10" height="10" rx="2" fill="#eff6ff" stroke="#2563eb" stroke-width="1.2"/>
+        <path d="M50.5 51 L53 53.5 L57.5 48" fill="none" stroke="#2563eb" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        <line x1="64" y1="51" x2="80" y2="51" stroke="#1e3a5f" stroke-width="1.1" stroke-linecap="round"/>
+        <rect x="48" y="62" width="10" height="10" rx="2" fill="#ffffff" stroke="#1e3a5f" stroke-width="1.1"/>
+        <line x1="64" y1="67" x2="78" y2="67" stroke="#94a3b8" stroke-width="1.0" stroke-linecap="round"/>
+        <rect x="48" y="78" width="10" height="10" rx="2" fill="#ffffff" stroke="#1e3a5f" stroke-width="1.1"/>
+        <line x1="64" y1="83" x2="74" y2="83" stroke="#94a3b8" stroke-width="1.0" stroke-linecap="round"/>
+        <path d="M84 34 c0 -4 4 -6 7 -4 c3 1 3 4 2 6 c-1 1 -3 1 -4 2 l-3 1 z" fill="#2563eb"/>
+        <polygon points="91,32 94,33 91,35" fill="#2563eb"/>
+        <circle cx="88" cy="33" r="0.8" fill="#ffffff"/>
+      </svg>`,
+      planner: `<svg viewBox="0 0 128 128" class="w-24 h-24" fill="none">
+        <line x1="24" y1="96" x2="104" y2="96" stroke="#1e3a5f" stroke-width="1.3" stroke-linecap="round"/>
+        <polygon points="36,96 46,42 82,42 92,96" fill="#ffffff" stroke="#1e3a5f" stroke-width="1.3" stroke-linejoin="round"/>
+        <path d="M52 38 V44 M64 38 V44 M76 38 V44" stroke="#1e3a5f" stroke-width="1.4" stroke-linecap="round"/>
+        <line x1="44" y1="52" x2="84" y2="52" stroke="#1e3a5f" stroke-width="1.0"/>
+        <circle cx="53" cy="62" r="1.8" fill="#94a3b8"/>
+        <circle cx="64" cy="62" r="1.8" fill="#94a3b8"/>
+        <circle cx="75" cy="62" r="1.8" fill="#94a3b8"/>
+        <circle cx="53" cy="74" r="1.8" fill="#94a3b8"/>
+        <circle cx="64" cy="74" r="4.5" fill="#2563eb"/>
+        <text x="64" y="76.2" font-family="sans-serif" font-size="6" font-weight="bold" fill="#ffffff" text-anchor="middle">18</text>
+        <circle cx="75" cy="74" r="1.8" fill="#94a3b8"/>
+        <circle cx="53" cy="86" r="1.8" fill="#94a3b8"/>
+        <circle cx="64" cy="86" r="1.8" fill="#94a3b8"/>
+        <circle cx="75" cy="86" r="1.8" fill="#94a3b8"/>
+        <line x1="94" y1="96" x2="94" y2="68" stroke="#2563eb" stroke-width="1.3" stroke-linecap="round"/>
+        <polygon points="94,68 104,73 94,78" fill="#2563eb"/>
+      </svg>`
+    };
+
+    const LINE_SECTIONS = Object.fromEntries(Object.entries(SECTIONS).map(([key, item]) => [key, {
+      title: item.title,
+      subtitle: item.subtitle,
+      svg: LINE_SVGS[key]
+    }]));
+
+    /* ---------- Fourth set: 3D clay — chunky volumes, every shape has a lit top
+       face and a darker edge below it, one vivid blue accent per icon. ---------- */
+    const c3dDefs = (p) => `<defs>
+        <linearGradient id="${p}-clay" x1="0.1" y1="0" x2="0.8" y2="1">
+          <stop offset="0%" stop-color="#ffffff"/>
+          <stop offset="100%" stop-color="#dfe8f4"/>
+        </linearGradient>
+        <linearGradient id="${p}-edge" x1="0.1" y1="0" x2="0.8" y2="1">
+          <stop offset="0%" stop-color="#c2d0e4"/>
+          <stop offset="100%" stop-color="#a5b8d3"/>
+        </linearGradient>
+        <linearGradient id="${p}-blue" x1="0.1" y1="0" x2="0.8" y2="1">
+          <stop offset="0%" stop-color="#7fb3ff"/>
+          <stop offset="100%" stop-color="#2a63e8"/>
+        </linearGradient>
+        <linearGradient id="${p}-bedge" x1="0.1" y1="0" x2="0.8" y2="1">
+          <stop offset="0%" stop-color="#2f6be6"/>
+          <stop offset="100%" stop-color="#1a3fa8"/>
+        </linearGradient>
+        <radialGradient id="${p}-floor" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#6d83a8" stop-opacity="0.32"/>
+          <stop offset="100%" stop-color="#6d83a8" stop-opacity="0"/>
+        </radialGradient>
+        <filter id="${p}-sh" x="-35%" y="-35%" width="180%" height="190%">
+          <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#46597e" flood-opacity="0.2"/>
+        </filter>
+      </defs>`;
+
+    /* a slab: darker body dropped a few px, lit face on top — the whole set's building block */
+    const slab = (p, x, y, w, h, r, d = 6, blue = false) =>
+      `<rect x="${x}" y="${y + d}" width="${w}" height="${h}" rx="${r}" fill="url(#${p}-${blue ? 'bedge' : 'edge'})"/>
+       <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${r}" fill="url(#${p}-${blue ? 'blue' : 'clay'})"/>`;
+    const C3D_LINE = '#c7d4e7';
+
+    const C3D_BODIES = {
+      drawing: (p) => `
+        ${slab(p, 26, 18, 60, 80, 14)}
+        <rect x="36" y="30" width="26" height="6" rx="3" fill="${C3D_LINE}"/>
+        <rect x="36" y="46" width="34" height="42" rx="5" fill="none" stroke="${C3D_LINE}" stroke-width="4.5"/>
+        <path d="M36 68 h17 v20" fill="none" stroke="${C3D_LINE}" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M72 102 L104 102 L104 70 Z" fill="url(#${p}-bedge)"/>
+        <path d="M72 96 L104 96 L104 64 Z" fill="url(#${p}-blue)"/>
+        <path d="M80 88 L96 88 L96 72 Z" fill="#ffffff" opacity="0.9"/>`,
+      model: (p) => `
+        <ellipse cx="64" cy="96" rx="36" ry="12" fill="url(#${p}-edge)"/>
+        <ellipse cx="64" cy="91" rx="36" ry="12" fill="url(#${p}-clay)"/>
+        <path d="M64 24 L96 42 L64 60 L32 42 Z" fill="#8fbdff"/>
+        <path d="M32 42 L64 60 L64 92 L32 74 Z" fill="url(#${p}-blue)"/>
+        <path d="M96 42 L96 74 L64 92 L64 60 Z" fill="url(#${p}-bedge)"/>`,
+      structure: (p) => `
+        <path d="M64 46 v12 M34 72 V58 H94 V72" fill="none" stroke="url(#${p}-edge)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+        ${slab(p, 44, 14, 40, 28, 11, 5, true)}
+        <rect x="54" y="24" width="20" height="5.5" rx="2.75" fill="#ffffff" opacity="0.85"/>
+        ${slab(p, 13, 70, 42, 28, 11, 5)}
+        <rect x="23" y="81" width="22" height="5.5" rx="2.75" fill="${C3D_LINE}"/>
+        ${slab(p, 73, 70, 42, 28, 11, 5)}
+        <rect x="83" y="81" width="22" height="5.5" rx="2.75" fill="${C3D_LINE}"/>`,
+      shared: (p) => `
+        <path d="M40 40 C52 20 78 20 90 40" fill="none" stroke="url(#${p}-edge)" stroke-width="3.5" stroke-dasharray="1 7" stroke-linecap="round"/>
+        ${slab(p, 12, 46, 44, 54, 12)}
+        <rect x="22" y="60" width="24" height="5.5" rx="2.75" fill="${C3D_LINE}"/>
+        <rect x="22" y="72" width="17" height="5.5" rx="2.75" fill="${C3D_LINE}"/>
+        ${slab(p, 72, 46, 44, 54, 12)}
+        <rect x="82" y="60" width="24" height="5.5" rx="2.75" fill="${C3D_LINE}"/>
+        <rect x="82" y="72" width="17" height="5.5" rx="2.75" fill="${C3D_LINE}"/>
+        <path d="M50 16 L82 26 L54 38 L57 28 Z" fill="url(#${p}-bedge)" transform="translate(0,4)"/>
+        <path d="M50 16 L82 26 L54 38 L57 28 Z" fill="url(#${p}-blue)"/>`,
+      survey: (p) => `
+        <ellipse cx="64" cy="94" rx="44" ry="11" fill="url(#${p}-edge)"/>
+        <path d="M20 94 C26 66 44 54 64 54 C84 54 102 66 108 94 Z" fill="url(#${p}-clay)"/>
+        <ellipse cx="64" cy="94" rx="44" ry="10" fill="url(#${p}-clay)" opacity="0.55"/>
+        <path d="M32 86 C40 70 52 62 64 62 C76 62 88 70 96 86" fill="none" stroke="${C3D_LINE}" stroke-width="3.5" stroke-linecap="round"/>
+        <rect x="76" y="26" width="7" height="50" rx="3.5" fill="url(#${p}-bedge)"/>
+        <path d="M83 30 L104 37 L83 46 Z" fill="url(#${p}-blue)"/>
+        <circle cx="46" cy="80" r="8" fill="url(#${p}-bedge)"/>
+        <circle cx="46" cy="77" r="7" fill="url(#${p}-blue)"/>`,
+      "site-capture": (p) => `
+        <path d="M50 54 l6 -12 h16 l6 12 Z" fill="url(#${p}-clay)"/>
+        ${slab(p, 22, 50, 84, 52, 17)}
+        <circle cx="64" cy="78" r="21" fill="url(#${p}-edge)"/>
+        <circle cx="64" cy="75" r="18" fill="url(#${p}-blue)"/>
+        <circle cx="57" cy="68" r="5.5" fill="#ffffff" opacity="0.6"/>
+        <circle cx="94" cy="64" r="4" fill="${C3D_LINE}"/>`,
+      submission: (p) => `
+        ${slab(p, 16, 44, 96, 56, 15)}
+        <path d="M22 50 L64 82 L106 50" fill="none" stroke="${C3D_LINE}" stroke-width="4.5" stroke-linejoin="round"/>
+        <circle cx="96" cy="40" r="17" fill="url(#${p}-bedge)"/>
+        <circle cx="96" cy="37" r="15" fill="url(#${p}-blue)"/>
+        <path d="M89 37 l5 5 L104 31" fill="none" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>`,
+      bimbox: (p) => `
+        <path d="M64 58 L100 74 L64 90 L28 74 Z" fill="url(#${p}-clay)"/>
+        <path d="M28 74 L64 90 L64 112 L28 96 Z" fill="url(#${p}-edge)"/>
+        <path d="M100 74 L100 96 L64 112 L64 90 Z" fill="#9db0cc"/>
+        <path d="M28 74 L16 64 L46 52 L64 58 Z" fill="url(#${p}-clay)"/>
+        <path d="M100 74 L112 64 L82 52 L64 58 Z" fill="url(#${p}-clay)"/>
+        <path d="M64 16 L84 26 L64 36 L44 26 Z" fill="#8fbdff"/>
+        <path d="M44 26 L64 36 L64 56 L44 46 Z" fill="url(#${p}-blue)"/>
+        <path d="M84 26 L84 46 L64 56 L64 36 Z" fill="url(#${p}-bedge)"/>`,
+      files: (p) => `
+        <path d="M14 46 a12 12 0 0 1 12 -12 h22 a6 6 0 0 1 4.8 2.4 L60 46 h42 a12 12 0 0 1 12 12 v8 H14 Z" fill="url(#${p}-edge)"/>
+        <rect x="34" y="28" width="48" height="40" rx="8" fill="url(#${p}-clay)"/>
+        <rect x="44" y="42" width="28" height="5.5" rx="2.75" fill="${C3D_LINE}"/>
+        ${slab(p, 14, 56, 100, 46, 15)}
+        <rect x="52" y="76" width="24" height="6" rx="3" fill="${C3D_LINE}"/>`,
+      search: (p) => `
+        ${slab(p, 16, 18, 60, 82, 14)}
+        <rect x="27" y="34" width="34" height="5.5" rx="2.75" fill="${C3D_LINE}"/>
+        <rect x="27" y="48" width="26" height="5.5" rx="2.75" fill="${C3D_LINE}"/>
+        <rect x="27" y="76" width="20" height="5.5" rx="2.75" fill="${C3D_LINE}"/>
+        <rect x="88" y="80" width="30" height="13" rx="6.5" transform="rotate(45 88 80)" fill="url(#${p}-bedge)"/>
+        <circle cx="78" cy="62" r="27" fill="url(#${p}-edge)"/>
+        <circle cx="78" cy="59" r="24" fill="#ffffff"/>
+        <circle cx="78" cy="59" r="24" fill="none" stroke="url(#${p}-blue)" stroke-width="8"/>`,
+      issue: (p) => `
+        <path d="M64 32 L98 90 H30 Z" fill="url(#${p}-edge)" stroke="url(#${p}-edge)" stroke-width="17" stroke-linejoin="round" transform="translate(0,6)"/>
+        <path d="M64 32 L98 90 H30 Z" fill="url(#${p}-clay)" stroke="url(#${p}-clay)" stroke-width="17" stroke-linejoin="round"/>
+        <rect x="58" y="48" width="12" height="24" rx="6" fill="url(#${p}-blue)"/>
+        <circle cx="64" cy="82" r="6.5" fill="url(#${p}-blue)"/>`,
+      rfi: (p) => `
+        <path d="M38 76 L34 100 L60 82 Z" fill="url(#${p}-edge)" transform="translate(0,4)"/>
+        ${slab(p, 20, 16, 88, 64, 20)}
+        <path d="M38 74 L34 96 L58 80 Z" fill="url(#${p}-clay)"/>
+        <path d="M53 42 a11 11 0 1 1 11 13 v4" fill="none" stroke="url(#${p}-blue)" stroke-width="9" stroke-linecap="round"/>
+        <circle cx="64" cy="68" r="5.5" fill="url(#${p}-blue)"/>`,
+    };
+
+    /* these three were already right — kept exactly as they were */
+    const CLAY3D_KEEP = {
+      "field-note": `<svg viewBox="0 0 128 128" class="w-24 h-24" fill="none">
+        <defs>
+          <filter id="c3d-fn-sh" x="-20%" y="-20%" width="140%" height="150%">
+            <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#385780" flood-opacity="0.13"/>
+          </filter>
+          <filter id="c3d-fn-float" x="-30%" y="-30%" width="160%" height="160%">
+            <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#385780" flood-opacity="0.13"/>
+          </filter>
+          <linearGradient id="c3d-fn-pen" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#60a5fa"/>
+            <stop offset="100%" stop-color="#1d4ed8"/>
+          </linearGradient>
+        </defs>
+        <g filter="url(#c3d-fn-sh)">
+          <rect x="36" y="22" width="60" height="84" rx="12" fill="#ffffff" stroke="#f1f5f9" stroke-width="2"/>
+          <rect x="32" y="32" width="10" height="5" rx="2.5" fill="#cbd5e1"/>
+          <rect x="32" y="48" width="10" height="5" rx="2.5" fill="#cbd5e1"/>
+          <rect x="32" y="64" width="10" height="5" rx="2.5" fill="#cbd5e1"/>
+          <rect x="32" y="80" width="10" height="5" rx="2.5" fill="#cbd5e1"/>
+          <rect x="48" y="38" width="34" height="4" rx="2" fill="#e9edf5"/>
+          <rect x="48" y="50" width="38" height="4" rx="2" fill="#e9edf5"/>
+          <rect x="48" y="62" width="28" height="4" rx="2" fill="#e9edf5"/>
+          <rect x="48" y="74" width="32" height="4" rx="2" fill="#e9edf5"/>
+          <polygon points="76,20 84,20 84,36 80,32 76,36" fill="#3b82f6"/>
+        </g>
+        <g transform="rotate(32 82 72)" filter="url(#c3d-fn-float)">
+          <rect x="76" y="40" width="8" height="38" rx="2" fill="url(#c3d-fn-pen)"/>
+          <rect x="76" y="78" width="8" height="6" rx="2" fill="#93c5fd"/>
+          <polygon points="76,40 84,40 80,30" fill="#bfdbfe"/>
+          <polygon points="78.5,33 81.5,33 80,30" fill="#1e293b"/>
+        </g>
+      </svg>`,
+      "task": `<svg viewBox="0 0 128 128" class="w-24 h-24" fill="none">
+        <defs>
+          <filter id="c3d-tk-sh" x="-20%" y="-20%" width="140%" height="150%">
+            <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#385780" flood-opacity="0.13"/>
+          </filter>
+          <filter id="c3d-tk-badge" x="-30%" y="-30%" width="160%" height="160%">
+            <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#385780" flood-opacity="0.13"/>
+          </filter>
+          <radialGradient id="c3d-tk-green" cx="35%" cy="35%" r="65%">
+            <stop offset="0%" stop-color="#bfdbfe"/>
+            <stop offset="40%" stop-color="#3b82f6"/>
+            <stop offset="100%" stop-color="#1d4ed8"/>
+          </radialGradient>
+          <radialGradient id="c3d-tk-blue" cx="35%" cy="35%" r="65%">
+            <stop offset="0%" stop-color="#93c5fd"/>
+            <stop offset="40%" stop-color="#2563eb"/>
+            <stop offset="100%" stop-color="#1e40af"/>
+          </radialGradient>
+        </defs>
+        <g filter="url(#c3d-tk-sh)">
+          <rect x="28" y="24" width="72" height="84" rx="14" fill="#ffffff" stroke="#f1f5f9" stroke-width="2"/>
+          <rect x="48" y="18" width="32" height="10" rx="4" fill="#e2e8f0" stroke="#ffffff" stroke-width="1.2"/>
+          <circle cx="64" cy="23" r="2" fill="#94a3b8"/>
+          <g filter="url(#c3d-tk-badge)">
+            <circle cx="44" cy="46" r="7" fill="url(#c3d-tk-green)" stroke="#ffffff" stroke-width="1.2"/>
+            <path d="M41 46 L43.5 48.5 L47.5 43.5" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </g>
+          <rect x="58" y="44" width="32" height="4" rx="2" fill="#cbd5e1"/>
+          <circle cx="44" cy="64" r="6" fill="url(#c3d-tk-blue)" stroke="#ffffff" stroke-width="1.2"/>
+          <rect x="58" y="62" width="26" height="4" rx="2" fill="#e2e8f0"/>
+          <circle cx="44" cy="82" r="6" fill="#e9edf5" stroke="#e2e8f0" stroke-width="0.8"/>
+          <rect x="58" y="80" width="22" height="4" rx="2" fill="#e9edf5"/>
+        </g>
+      </svg>`,
+      "planner": `<svg viewBox="0 0 128 128" class="w-24 h-24" fill="none">
+        <defs>
+          <filter id="c3d-pl-sh" x="-20%" y="-20%" width="140%" height="150%">
+            <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#385780" flood-opacity="0.13"/>
+          </filter>
+          <filter id="c3d-pl-badge" x="-30%" y="-30%" width="160%" height="160%">
+            <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#385780" flood-opacity="0.13"/>
+          </filter>
+          <radialGradient id="c3d-pl-blue" cx="35%" cy="35%" r="65%">
+            <stop offset="0%" stop-color="#93c5fd"/>
+            <stop offset="40%" stop-color="#2563eb"/>
+            <stop offset="100%" stop-color="#1e40af"/>
+          </radialGradient>
+          <linearGradient id="c3d-pl-orange" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#60a5fa"/>
+            <stop offset="100%" stop-color="#2563eb"/>
+          </linearGradient>
+        </defs>
+        <g filter="url(#c3d-pl-sh)">
+          <rect x="28" y="26" width="72" height="80" rx="14" fill="#ffffff" stroke="#f1f5f9" stroke-width="2"/>
+          <rect x="42" y="20" width="6" height="10" rx="3" fill="#cbd5e1"/>
+          <rect x="80" y="20" width="6" height="10" rx="3" fill="#cbd5e1"/>
+          <rect x="36" y="34" width="56" height="6" rx="3" fill="#e9edf5"/>
+          <circle cx="44" cy="50" r="3" fill="#e2e8f0"/>
+          <circle cx="57" cy="50" r="3" fill="#e2e8f0"/>
+          <circle cx="70" cy="50" r="3" fill="#e2e8f0"/>
+          <circle cx="83" cy="50" r="3" fill="#e2e8f0"/>
+          <g filter="url(#c3d-pl-badge)">
+            <circle cx="57" cy="66" r="8" fill="url(#c3d-pl-blue)" stroke="#ffffff" stroke-width="1.5"/>
+            <text x="57" y="69.2" font-family="sans-serif" font-size="7" font-weight="bold" fill="#ffffff" text-anchor="middle">18</text>
+          </g>
+          <circle cx="44" cy="66" r="3" fill="#e2e8f0"/>
+          <circle cx="70" cy="66" r="3" fill="#e2e8f0"/>
+          <circle cx="83" cy="66" r="3" fill="#e2e8f0"/>
+          <rect x="40" y="82" width="46" height="8" rx="4" fill="url(#c3d-pl-orange)" stroke="#ffffff" stroke-width="1"/>
+        </g>
+      </svg>`
+    };
+
+    const CLAY3D_SVGS = Object.fromEntries(Object.keys(C3D_BODIES).map((key) => {
+      const p = 'c3d-' + key.replace(/[^a-z]/g, '');
+      return [key, `<svg viewBox="0 0 128 128" class="w-24 h-24" fill="none">${c3dDefs(p)}` +
+        `<ellipse cx="64" cy="116" rx="36" ry="7" fill="url(#${p}-floor)"/>` +
+        `<g filter="url(#${p}-sh)">${C3D_BODIES[key](p)}</g></svg>`];
+    }));
+    Object.assign(CLAY3D_SVGS, CLAY3D_KEEP);
+
+    const CLAY3D_SECTIONS = Object.fromEntries(Object.entries(SECTIONS).map(([key, item]) => [key, {
+      title: item.title,
+      subtitle: item.subtitle,
+      svg: CLAY3D_SVGS[key]
+    }]));
+
+    const CLAY_COLOR_SVGS = {
+      drawing: `<svg viewBox="0 0 128 128" class="w-24 h-24" fill="none">
+        <defs>
+          <filter id="cc3d-dr-sh" x="-20%" y="-20%" width="140%" height="150%">
+            <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#385780" flood-opacity="0.13"/>
+          </filter>
+          <filter id="cc3d-dr-float" x="-30%" y="-30%" width="160%" height="160%">
+            <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#385780" flood-opacity="0.13"/>
+          </filter>
+          <linearGradient id="cc3d-dr-card" x1="0" y1="0" x2="0.8" y2="1">
+            <stop offset="0%" stop-color="#ffffff"/>
+            <stop offset="100%" stop-color="#e2e8f0"/>
+          </linearGradient>
+          <linearGradient id="cc3d-dr-sheet" x1="0" y1="0" x2="0.8" y2="1">
+            <stop offset="0%" stop-color="#f8fafc"/>
+            <stop offset="100%" stop-color="#dbeafe"/>
+          </linearGradient>
+          <linearGradient id="cc3d-dr-ruler" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#60a5fa"/>
+            <stop offset="100%" stop-color="#1d4ed8"/>
+          </linearGradient>
+          <radialGradient id="cc3d-dr-orange" cx="35%" cy="35%" r="65%">
+            <stop offset="0%" stop-color="#fed7aa"/>
+            <stop offset="40%" stop-color="#f97316"/>
+            <stop offset="100%" stop-color="#c2410c"/>
+          </radialGradient>
+          <radialGradient id="cc3d-dr-green" cx="35%" cy="35%" r="65%">
+            <stop offset="0%" stop-color="#bbf7d0"/>
+            <stop offset="40%" stop-color="#22c55e"/>
+            <stop offset="100%" stop-color="#15803d"/>
+          </radialGradient>
+        </defs>
+        <rect x="24" y="20" width="76" height="88" rx="16" fill="url(#cc3d-dr-card)" stroke="#ffffff" stroke-width="2" filter="url(#cc3d-dr-sh)"/>
+        <rect x="34" y="28" width="56" height="8" rx="4" fill="#e9edf5" stroke="#e2e8f0" stroke-width="0.8"/>
+        <circle cx="82" cy="32" r="2" stroke="#94a3b8" stroke-width="0.9" fill="none"/>
+        <g transform="rotate(-6 70 68)" filter="url(#cc3d-dr-float)">
+          <rect x="42" y="34" width="56" height="68" rx="12" fill="url(#cc3d-dr-sheet)" stroke="#ffffff" stroke-width="2"/>
+          <path d="M50 46 h22 v18 h-10 v16 h-12 z" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.6" stroke-linejoin="round"/>
+          <path d="M62 64 a8 8 0 0 1 8 8" fill="none" stroke="#3b82f6" stroke-width="1.4" stroke-dasharray="2 2"/>
+          <rect x="50" y="86" width="24" height="4" rx="2" fill="#dbeafe"/>
+          <rect x="50" y="93" width="16" height="3" rx="1.5" fill="#dbeafe"/>
+        </g>
+        <polygon points="68,102 98,102 98,72" fill="url(#cc3d-dr-ruler)" stroke="#ffffff" stroke-width="1.5" stroke-linejoin="round"/>
+        <polygon points="76,98 94,98 94,80" fill="#ffffff" opacity="0.9"/>
+      </svg>`,
+      model: `<svg viewBox="0 0 128 128" class="w-24 h-24" fill="none">
+        <defs>
+          <filter id="cc3d-mo-sh" x="-25%" y="-25%" width="150%" height="150%">
+            <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#385780" flood-opacity="0.13"/>
+          </filter>
+          <filter id="cc3d-mo-float" x="-30%" y="-30%" width="160%" height="160%">
+            <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#385780" flood-opacity="0.13"/>
+          </filter>
+          <linearGradient id="cc3d-mo-top" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#ffffff"/>
+            <stop offset="100%" stop-color="#f1f5f9"/>
+          </linearGradient>
+          <linearGradient id="cc3d-mo-left" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#e2e8f0"/>
+            <stop offset="100%" stop-color="#cbd5e1"/>
+          </linearGradient>
+          <linearGradient id="cc3d-mo-right" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#f8fafc"/>
+            <stop offset="100%" stop-color="#e2e8f0"/>
+          </linearGradient>
+          <radialGradient id="cc3d-mo-blue" cx="35%" cy="35%" r="65%">
+            <stop offset="0%" stop-color="#93c5fd"/>
+            <stop offset="40%" stop-color="#2563eb"/>
+            <stop offset="100%" stop-color="#1e40af"/>
+          </radialGradient>
+          <radialGradient id="cc3d-mo-green" cx="35%" cy="35%" r="65%">
+            <stop offset="0%" stop-color="#bbf7d0"/>
+            <stop offset="40%" stop-color="#22c55e"/>
+            <stop offset="100%" stop-color="#15803d"/>
+          </radialGradient>
+        </defs>
+        <ellipse cx="64" cy="74" rx="44" ry="24" fill="#f8fafc" stroke="#ffffff" stroke-width="2" filter="url(#cc3d-mo-sh)"/>
+        <ellipse cx="64" cy="74" rx="36" ry="18" fill="#e9edf5"/>
+        <g transform="translate(0, -4)" filter="url(#cc3d-mo-float)">
+          <polygon points="64,30 90,44 64,58 38,44" fill="url(#cc3d-mo-top)" stroke="#ffffff" stroke-width="1.8" stroke-linejoin="round"/>
+          <polygon points="38,44 64,58 64,86 38,72" fill="url(#cc3d-mo-left)" stroke="#cbd5e1" stroke-width="1.2" stroke-linejoin="round"/>
+          <polygon points="64,58 90,44 90,72 64,86" fill="url(#cc3d-mo-right)" stroke="#ffffff" stroke-width="1.2" stroke-linejoin="round"/>
+          <ellipse cx="64" cy="58" rx="44" ry="18" fill="none" stroke="#ffffff" stroke-width="3" stroke-dasharray="8 6" transform="rotate(-16 64 58)" opacity="0.9"/>
+          <circle cx="64" cy="24" r="7" fill="url(#cc3d-mo-blue)" stroke="#ffffff" stroke-width="1.5"/>
+        </g>
+      </svg>`,
+      structure: `<svg viewBox="0 0 128 128" class="w-24 h-24" fill="none">
+        <defs>
+          <filter id="cc3d-st-sh" x="-20%" y="-20%" width="140%" height="150%">
+            <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#385780" flood-opacity="0.13"/>
+          </filter>
+          <filter id="cc3d-st-node" x="-25%" y="-25%" width="150%" height="150%">
+            <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#385780" flood-opacity="0.13"/>
+          </filter>
+          <radialGradient id="cc3d-st-blue" cx="35%" cy="35%" r="65%">
+            <stop offset="0%" stop-color="#93c5fd"/>
+            <stop offset="40%" stop-color="#2563eb"/>
+            <stop offset="100%" stop-color="#1e40af"/>
+          </radialGradient>
+          <radialGradient id="cc3d-st-green" cx="35%" cy="35%" r="65%">
+            <stop offset="0%" stop-color="#bbf7d0"/>
+            <stop offset="40%" stop-color="#22c55e"/>
+            <stop offset="100%" stop-color="#15803d"/>
+          </radialGradient>
+          <radialGradient id="cc3d-st-orange" cx="35%" cy="35%" r="65%">
+            <stop offset="0%" stop-color="#fed7aa"/>
+            <stop offset="40%" stop-color="#f97316"/>
+            <stop offset="100%" stop-color="#c2410c"/>
+          </radialGradient>
+        </defs>
+        <rect x="24" y="20" width="80" height="88" rx="16" fill="#f8fafc" stroke="#ffffff" stroke-width="2" filter="url(#cc3d-st-sh)"/>
+        <rect x="34" y="28" width="60" height="7" rx="3.5" fill="#e9edf5"/>
+        <path d="M64 54 V66 M40 76 V66 H88 V76" fill="none" stroke="#cbd5e1" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        <g filter="url(#cc3d-st-node)">
+          <rect x="46" y="38" width="36" height="24" rx="7" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+          <rect x="52" y="44" width="14" height="4" rx="2" fill="url(#cc3d-st-blue)"/>
+          <circle cx="72" cy="50" r="3.5" fill="url(#cc3d-st-blue)"/>
+        </g>
+        <g filter="url(#cc3d-st-node)">
+          <rect x="26" y="74" width="28" height="22" rx="6" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.2"/>
+          <rect x="32" y="80" width="12" height="3" rx="1.5" fill="#cbd5e1"/>
+          <circle cx="44" cy="85" r="3.5" fill="url(#cc3d-st-green)"/>
+        </g>
+        <g filter="url(#cc3d-st-node)">
+          <rect x="68" y="74" width="34" height="22" rx="6" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.2"/>
+          <rect x="74" y="80" width="14" height="3" rx="1.5" fill="#cbd5e1"/>
+          <circle cx="92" cy="85" r="3.5" fill="url(#cc3d-st-orange)"/>
+        </g>
+      </svg>`,
+      shared: `<svg viewBox="0 0 128 128" class="w-24 h-24" fill="none">
+        <defs>
+          <filter id="cc3d-sh-glow" x="-20%" y="-20%" width="140%" height="150%">
+            <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#385780" flood-opacity="0.13"/>
+          </filter>
+          <filter id="cc3d-sh-card" x="-30%" y="-30%" width="160%" height="160%">
+            <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#385780" flood-opacity="0.13"/>
+          </filter>
+          <radialGradient id="cc3d-sh-blue" cx="35%" cy="35%" r="65%">
+            <stop offset="0%" stop-color="#93c5fd"/>
+            <stop offset="40%" stop-color="#2563eb"/>
+            <stop offset="100%" stop-color="#1e40af"/>
+          </radialGradient>
+          <radialGradient id="cc3d-sh-green" cx="35%" cy="35%" r="65%">
+            <stop offset="0%" stop-color="#bbf7d0"/>
+            <stop offset="40%" stop-color="#22c55e"/>
+            <stop offset="100%" stop-color="#15803d"/>
+          </radialGradient>
+        </defs>
+        <ellipse cx="64" cy="70" rx="46" ry="34" fill="#f8fafc" stroke="#ffffff" stroke-width="2" filter="url(#cc3d-sh-glow)"/>
+        <g transform="rotate(-8 42 66)" filter="url(#cc3d-sh-card)">
+          <rect x="24" y="36" width="36" height="60" rx="9" fill="#ffffff" stroke="#f1f5f9" stroke-width="1.8"/>
+          <rect x="30" y="44" width="24" height="6" rx="3" fill="#e9edf5"/>
+          <rect x="30" y="54" width="16" height="14" rx="4" fill="#eff6ff"/>
+          <circle cx="38" cy="61" r="3.5" fill="url(#cc3d-sh-blue)"/>
+        </g>
+        <g transform="rotate(6 86 64)" filter="url(#cc3d-sh-card)">
+          <rect x="68" y="38" width="38" height="48" rx="13" fill="#ffffff" stroke="#f1f5f9" stroke-width="2"/>
+          <rect x="74" y="44" width="26" height="24" rx="6" fill="#f8fafc"/>
+          <rect x="78" y="56" width="3" height="8" rx="1.5" fill="#cbd5e1"/>
+          <rect x="83" y="52" width="3" height="12" rx="1.5" fill="#0284c7"/>
+          <rect x="88" y="55" width="3" height="9" rx="1.5" fill="#22c55e"/>
+          <rect x="93" y="50" width="3" height="14" rx="1.5" fill="#f43f5e"/>
+          <rect x="74" y="72" width="12" height="4" rx="2" fill="#e2e8f0"/>
+          <rect x="88" y="72" width="12" height="4" rx="2" fill="#e2e8f0"/>
+        </g>
+        <path d="M44 40 C 54 22, 74 22, 84 40" fill="none" stroke="#3b82f6" stroke-width="2" stroke-dasharray="3 3"/>
+      </svg>`,
+      survey: `<svg viewBox="0 0 128 128" class="w-24 h-24" fill="none">
+        <defs>
+          <filter id="cc3d-su-sh" x="-20%" y="-20%" width="140%" height="150%">
+            <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#385780" flood-opacity="0.13"/>
+          </filter>
+          <filter id="cc3d-su-prism" x="-30%" y="-30%" width="160%" height="160%">
+            <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#385780" flood-opacity="0.13"/>
+          </filter>
+          <radialGradient id="cc3d-su-blue" cx="35%" cy="35%" r="65%">
+            <stop offset="0%" stop-color="#93c5fd"/>
+            <stop offset="40%" stop-color="#2563eb"/>
+            <stop offset="100%" stop-color="#1e40af"/>
+          </radialGradient>
+          <radialGradient id="cc3d-su-green" cx="35%" cy="35%" r="65%">
+            <stop offset="0%" stop-color="#bbf7d0"/>
+            <stop offset="40%" stop-color="#22c55e"/>
+            <stop offset="100%" stop-color="#15803d"/>
+          </radialGradient>
+        </defs>
+        <g filter="url(#cc3d-su-sh)">
+          <ellipse cx="64" cy="86" rx="46" ry="20" fill="#e2e8f0"/>
+          <ellipse cx="64" cy="78" rx="38" ry="16" fill="#edf2f7"/>
+          <ellipse cx="64" cy="70" rx="30" ry="12" fill="#ffffff" stroke="#f1f5f9" stroke-width="1.5"/>
+        </g>
+        <g transform="translate(0, -2)" filter="url(#cc3d-su-prism)">
+          <line x1="56" y1="64" x2="48" y2="76" stroke="#cbd5e1" stroke-width="3" stroke-linecap="round"/>
+          <line x1="64" y1="64" x2="64" y2="78" stroke="#cbd5e1" stroke-width="3" stroke-linecap="round"/>
+          <line x1="72" y1="64" x2="80" y2="76" stroke="#cbd5e1" stroke-width="3" stroke-linecap="round"/>
+          <rect x="54" y="44" width="20" height="22" rx="6" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.8"/>
+          <circle cx="64" cy="54" r="6" fill="url(#cc3d-su-blue)" stroke="#ffffff" stroke-width="1.5"/>
+          <path d="M58 44 V40 H70 V44" fill="none" stroke="#cbd5e1" stroke-width="2.5" stroke-linecap="round"/>
+        </g>
+        <line x1="72" y1="52" x2="98" y2="52" stroke="#3b82f6" stroke-width="1.8" stroke-dasharray="3 3"/>
+        <g transform="translate(98, 42)" filter="url(#cc3d-su-prism)">
+          <line x1="0" y1="0" x2="0" y2="40" stroke="#cbd5e1" stroke-width="2.5" stroke-linecap="round"/>
+          <polygon points="0,-2 6,6 0,14 -6,6" fill="url(#cc3d-su-blue)" stroke="#ffffff" stroke-width="1.2"/>
+          <circle cx="0" cy="6" r="2" fill="#ffffff"/>
+        </g>
+      </svg>`,
+      'site-capture': `<svg viewBox="0 0 128 128" class="w-24 h-24" fill="none">
+        <defs>
+          <filter id="cc3d-sc-sh" x="-20%" y="-20%" width="140%" height="150%">
+            <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#385780" flood-opacity="0.13"/>
+          </filter>
+          <filter id="cc3d-sc-cam" x="-30%" y="-30%" width="160%" height="160%">
+            <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#385780" flood-opacity="0.13"/>
+          </filter>
+          <radialGradient id="cc3d-sc-lens" cx="35%" cy="35%" r="65%">
+            <stop offset="0%" stop-color="#93c5fd"/>
+            <stop offset="35%" stop-color="#2563eb"/>
+            <stop offset="100%" stop-color="#172554"/>
+          </radialGradient>
+          <radialGradient id="cc3d-sc-orange" cx="35%" cy="35%" r="65%">
+            <stop offset="0%" stop-color="#fed7aa"/>
+            <stop offset="40%" stop-color="#f97316"/>
+            <stop offset="100%" stop-color="#c2410c"/>
+          </radialGradient>
+        </defs>
+        <rect x="24" y="22" width="80" height="84" rx="16" fill="#f8fafc" stroke="#ffffff" stroke-width="2" filter="url(#cc3d-sc-sh)"/>
+        <rect x="34" y="30" width="60" height="7" rx="3.5" fill="#e9edf5"/>
+        <g transform="translate(0, 6)" filter="url(#cc3d-sc-cam)">
+          <rect x="34" y="42" width="60" height="42" rx="13" fill="#ffffff" stroke="#f1f5f9" stroke-width="2"/>
+          <path d="M52 42 L56 36 H72 L76 42 Z" fill="#ffffff" stroke="#f1f5f9" stroke-width="1.5"/>
+          <rect x="42" y="36" width="8" height="6" rx="2" fill="url(#cc3d-sc-orange)"/>
+          <circle cx="64" cy="62" r="16" fill="#e9edf5" stroke="#ffffff" stroke-width="2"/>
+          <circle cx="64" cy="62" r="12" fill="#cbd5e1"/>
+          <circle cx="64" cy="62" r="9" fill="url(#cc3d-sc-lens)" stroke="#ffffff" stroke-width="1.2"/>
+          <circle cx="61" cy="59" r="2.5" fill="#ffffff" opacity="0.8"/>
+        </g>
+        <g transform="rotate(14 96 38)">
+          <rect x="88" y="30" width="18" height="15" rx="3" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.2"/>
+          <circle cx="97" cy="37" r="3" fill="#22c55e"/>
+        </g>
+      </svg>`,
+      submission: `<svg viewBox="0 0 128 128" class="w-24 h-24" fill="none">
+        <defs>
+          <filter id="cc3d-sm-sh" x="-20%" y="-20%" width="140%" height="150%">
+            <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#385780" flood-opacity="0.13"/>
+          </filter>
+          <filter id="cc3d-sm-float" x="-30%" y="-30%" width="160%" height="160%">
+            <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#385780" flood-opacity="0.13"/>
+          </filter>
+          <radialGradient id="cc3d-sm-green" cx="35%" cy="35%" r="65%">
+            <stop offset="0%" stop-color="#bbf7d0"/>
+            <stop offset="40%" stop-color="#22c55e"/>
+            <stop offset="100%" stop-color="#15803d"/>
+          </radialGradient>
+          <radialGradient id="cc3d-sm-blue" cx="35%" cy="35%" r="65%">
+            <stop offset="0%" stop-color="#93c5fd"/>
+            <stop offset="40%" stop-color="#2563eb"/>
+            <stop offset="100%" stop-color="#1e40af"/>
+          </radialGradient>
+        </defs>
+        <path d="M26 68 L32 98 H96 L102 68" fill="#f8fafc" stroke="#ffffff" stroke-width="2" filter="url(#cc3d-sm-sh)"/>
+        <path d="M52 68 V76 H76 V68" fill="none" stroke="#e2e8f0" stroke-width="2"/>
+        <g transform="rotate(-5 64 56)" filter="url(#cc3d-sm-float)">
+          <rect x="40" y="28" width="52" height="62" rx="10" fill="#ffffff" stroke="#f1f5f9" stroke-width="2"/>
+          <rect x="40" y="52" width="52" height="12" fill="#eff6ff"/>
+          <rect x="48" y="38" width="28" height="4" rx="2" fill="#cbd5e1"/>
+          <rect x="48" y="45" width="18" height="3" rx="1.5" fill="#e2e8f0"/>
+          <circle cx="66" cy="58" r="8" fill="url(#cc3d-sm-green)" stroke="#ffffff" stroke-width="1.5"/>
+          <path d="M62 58 L65 61 L70 55" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        </g>
+        <g transform="translate(82, 24) rotate(15)">
+          <polygon points="-2,-8 14,0 -2,8 2,0" fill="url(#cc3d-sm-blue)"/>
+        </g>
+      </svg>`,
+      bimbox: `<svg viewBox="0 0 128 128" class="w-24 h-24" fill="none">
+        <defs>
+          <filter id="cc3d-bx-sh" x="-20%" y="-20%" width="140%" height="150%">
+            <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#385780" flood-opacity="0.13"/>
+          </filter>
+          <filter id="cc3d-bx-gem" x="-30%" y="-30%" width="160%" height="160%">
+            <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#385780" flood-opacity="0.13"/>
+          </filter>
+          <linearGradient id="cc3d-bx-gemtop" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#93c5fd"/>
+            <stop offset="100%" stop-color="#38bdf8"/>
+          </linearGradient>
+          <linearGradient id="cc3d-bx-gemleft" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#2563eb"/>
+            <stop offset="100%" stop-color="#1d4ed8"/>
+          </linearGradient>
+          <linearGradient id="cc3d-bx-gemright" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#1d4ed8"/>
+            <stop offset="100%" stop-color="#1e3a8a"/>
+          </linearGradient>
+        </defs>
+        <g filter="url(#cc3d-bx-sh)">
+          <polygon points="36,66 64,80 92,66 92,90 64,102 36,90" fill="#ffffff" stroke="#f1f5f9" stroke-width="2" stroke-linejoin="round"/>
+          <line x1="64" y1="80" x2="64" y2="102" stroke="#e2e8f0" stroke-width="2"/>
+          <polygon points="64,80 92,66 92,90 64,102" fill="#f8fafc" stroke="#f1f5f9" stroke-width="2" stroke-linejoin="round"/>
+          <polygon points="36,66 22,54 44,48 64,60" fill="#f8fafc" stroke="#ffffff" stroke-width="1.8" stroke-linejoin="round"/>
+          <polygon points="92,66 106,54 84,48 64,60" fill="#f8fafc" stroke="#ffffff" stroke-width="1.8" stroke-linejoin="round"/>
+        </g>
+        <g transform="translate(0, -6)" filter="url(#cc3d-bx-gem)">
+          <polygon points="64,26 80,36 64,46 48,36" fill="url(#cc3d-bx-gemtop)" stroke="#ffffff" stroke-width="1.5" stroke-linejoin="round"/>
+          <polygon points="48,36 64,46 64,62 48,52" fill="url(#cc3d-bx-gemleft)" stroke="#60a5fa" stroke-width="1" stroke-linejoin="round"/>
+          <polygon points="64,46 80,36 80,52 64,62" fill="url(#cc3d-bx-gemright)" stroke="#3b82f6" stroke-width="1" stroke-linejoin="round"/>
+          <circle cx="64" cy="34" r="2.5" fill="#ffffff" opacity="0.8"/>
+        </g>
+        <rect x="32" y="34" width="7" height="12" rx="3.5" fill="#f97316" stroke="#ffffff" stroke-width="1"/>
+        <circle cx="94" cy="80" r="4" fill="#ec4899" stroke="#ffffff" stroke-width="1"/>
+      </svg>`,
+      files: `<svg viewBox="0 0 128 128" class="w-24 h-24" fill="none">
+        <defs>
+          <filter id="cc3d-fl-sh" x="-20%" y="-20%" width="140%" height="150%">
+            <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#385780" flood-opacity="0.13"/>
+          </filter>
+          <filter id="cc3d-fl-float" x="-30%" y="-30%" width="160%" height="160%">
+            <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#385780" flood-opacity="0.13"/>
+          </filter>
+          <radialGradient id="cc3d-fl-blue" cx="35%" cy="35%" r="65%">
+            <stop offset="0%" stop-color="#93c5fd"/>
+            <stop offset="40%" stop-color="#2563eb"/>
+            <stop offset="100%" stop-color="#1e40af"/>
+          </radialGradient>
+          <radialGradient id="cc3d-fl-green" cx="35%" cy="35%" r="65%">
+            <stop offset="0%" stop-color="#bbf7d0"/>
+            <stop offset="40%" stop-color="#22c55e"/>
+            <stop offset="100%" stop-color="#15803d"/>
+          </radialGradient>
+        </defs>
+        <rect x="26" y="22" width="76" height="86" rx="16" fill="#f8fafc" stroke="#ffffff" stroke-width="2" filter="url(#cc3d-fl-sh)"/>
+        <rect x="36" y="30" width="56" height="7" rx="3.5" fill="#e9edf5"/>
+        <g transform="rotate(-6 68 68)" filter="url(#cc3d-fl-float)">
+          <rect x="38" y="36" width="58" height="66" rx="12" fill="#ffffff" stroke="#f1f5f9" stroke-width="2"/>
+          <rect x="46" y="44" width="42" height="7" rx="3.5" fill="#e9edf5"/>
+          <rect x="46" y="56" width="42" height="12" rx="4" fill="#f8fafc"/>
+          <circle cx="53" cy="62" r="3.5" fill="url(#cc3d-fl-blue)"/>
+          <rect x="61" y="60" width="22" height="3" rx="1.5" fill="#cbd5e1"/>
+          <rect x="46" y="72" width="42" height="12" rx="4" fill="#f8fafc"/>
+          <circle cx="53" cy="78" r="3.5" fill="url(#cc3d-fl-green)"/>
+          <rect x="61" y="76" width="18" height="3" rx="1.5" fill="#cbd5e1"/>
+        </g>
+      </svg>`,
+      search: `<svg viewBox="0 0 128 128" class="w-24 h-24" fill="none">
+        <defs>
+          <filter id="cc3d-sr-sh" x="-20%" y="-20%" width="140%" height="150%">
+            <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#385780" flood-opacity="0.13"/>
+          </filter>
+          <filter id="cc3d-sr-mag" x="-30%" y="-30%" width="160%" height="160%">
+            <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#385780" flood-opacity="0.13"/>
+          </filter>
+          <radialGradient id="cc3d-sr-blue" cx="35%" cy="35%" r="65%">
+            <stop offset="0%" stop-color="#93c5fd"/>
+            <stop offset="40%" stop-color="#2563eb"/>
+            <stop offset="100%" stop-color="#172554"/>
+          </radialGradient>
+        </defs>
+        <rect x="24" y="20" width="80" height="88" rx="16" fill="#f8fafc" stroke="#ffffff" stroke-width="2" filter="url(#cc3d-sr-sh)"/>
+        <rect x="34" y="28" width="60" height="11" rx="5.5" fill="#e9edf5" stroke="#e2e8f0" stroke-width="0.8"/>
+        <circle cx="42" cy="33.5" r="2.5" stroke="#94a3b8" stroke-width="1.2" fill="none"/>
+        <line x1="44" y1="35.5" x2="46" y2="37.5" stroke="#94a3b8" stroke-width="1.2" stroke-linecap="round"/>
+        <rect x="34" y="45" width="60" height="18" rx="5" fill="#ffffff" stroke="#e2e8f0" stroke-width="1"/>
+        <rect x="40" y="50" width="30" height="3" rx="1.5" fill="#cbd5e1"/>
+        <rect x="40" y="56" width="20" height="3" rx="1.5" fill="#e2e8f0"/>
+        <circle cx="84" cy="54" r="4" fill="#22c55e"/>
+        <g transform="translate(4, 6)" filter="url(#cc3d-sr-mag)">
+          <line x1="72" y1="72" x2="94" y2="94" stroke="#ffffff" stroke-width="7" stroke-linecap="round"/>
+          <line x1="72" y1="72" x2="94" y2="94" stroke="#e2e8f0" stroke-width="4.5" stroke-linecap="round"/>
+          <rect x="80" y="80" width="5" height="5" rx="2" fill="#f97316" transform="rotate(45 82.5 82.5)"/>
+          <circle cx="58" cy="58" r="21" fill="#ffffff" stroke="#f1f5f9" stroke-width="3"/>
+          <circle cx="58" cy="58" r="16" fill="url(#cc3d-sr-blue)" stroke="#ffffff" stroke-width="1.2"/>
+          <ellipse cx="54" cy="54" rx="6" ry="3" fill="#ffffff" opacity="0.6" transform="rotate(-30 54 54)"/>
+        </g>
+      </svg>`,
+      issue: `<svg viewBox="0 0 128 128" class="w-24 h-24" fill="none">
+        <defs>
+          <filter id="cc3d-is-sh" x="-20%" y="-20%" width="140%" height="150%">
+            <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#385780" flood-opacity="0.13"/>
+          </filter>
+          <filter id="cc3d-is-tri" x="-30%" y="-30%" width="160%" height="160%">
+            <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#385780" flood-opacity="0.13"/>
+          </filter>
+          <radialGradient id="cc3d-is-orange" cx="35%" cy="35%" r="65%">
+            <stop offset="0%" stop-color="#fed7aa"/>
+            <stop offset="40%" stop-color="#f97316"/>
+            <stop offset="100%" stop-color="#c2410c"/>
+          </radialGradient>
+        </defs>
+        <rect x="24" y="22" width="80" height="84" rx="18" fill="#f8fafc" stroke="#ffffff" stroke-width="2" filter="url(#cc3d-is-sh)"/>
+        <g filter="url(#cc3d-is-tri)">
+          <path d="M64 30 L94 78 C96 82, 94 86, 90 86 H38 C34 86, 32 82, 34 78 Z" fill="#ffffff" stroke="#f1f5f9" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M64 42 L84 76 C85 78, 84 80, 81 80 H47 C44 80, 43 78, 44 76 Z" fill="#e9edf5" stroke="#e2e8f0" stroke-width="1"/>
+          <rect x="61.5" y="50" width="5" height="15" rx="2.5" fill="url(#cc3d-is-orange)"/>
+          <circle cx="64" cy="72" r="2.8" fill="url(#cc3d-is-orange)"/>
+        </g>
+      </svg>`,
+      rfi: `<svg viewBox="0 0 128 128" class="w-24 h-24" fill="none">
+        <defs>
+          <filter id="cc3d-rf-sh" x="-20%" y="-20%" width="140%" height="150%">
+            <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#385780" flood-opacity="0.13"/>
+          </filter>
+          <filter id="cc3d-rf-float" x="-30%" y="-30%" width="160%" height="160%">
+            <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#385780" flood-opacity="0.13"/>
+          </filter>
+          <radialGradient id="cc3d-rf-blue" cx="35%" cy="35%" r="65%">
+            <stop offset="0%" stop-color="#93c5fd"/>
+            <stop offset="40%" stop-color="#2563eb"/>
+            <stop offset="100%" stop-color="#1e40af"/>
+          </radialGradient>
+        </defs>
+        <rect x="24" y="24" width="80" height="80" rx="16" fill="#f8fafc" stroke="#ffffff" stroke-width="2" filter="url(#cc3d-rf-sh)"/>
+        <g transform="translate(0, 8)" filter="url(#cc3d-rf-float)">
+          <rect x="36" y="38" width="56" height="42" rx="10" fill="#ffffff" stroke="#f1f5f9" stroke-width="2"/>
+          <path d="M36 42 L64 62 L92 42" fill="none" stroke="#cbd5e1" stroke-width="2" stroke-linejoin="round"/>
+          <rect x="46" y="68" width="24" height="3" rx="1.5" fill="#e2e8f0"/>
+        </g>
+        <g transform="translate(0, -2)" filter="url(#cc3d-rf-float)">
+          <path d="M58 28 C58 19, 70 19, 70 26 C70 31, 64 33, 64 38" fill="none" stroke="url(#cc3d-rf-blue)" stroke-width="4.5" stroke-linecap="round"/>
+          <circle cx="64" cy="46" r="2.6" fill="url(#cc3d-rf-blue)"/>
+        </g>
+      </svg>`,
+      'field-note': `<svg viewBox="0 0 128 128" class="w-24 h-24" fill="none">
+        <defs>
+          <filter id="cc3d-fn-sh" x="-20%" y="-20%" width="140%" height="150%">
+            <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#385780" flood-opacity="0.13"/>
+          </filter>
+          <filter id="cc3d-fn-float" x="-30%" y="-30%" width="160%" height="160%">
+            <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#385780" flood-opacity="0.13"/>
+          </filter>
+          <linearGradient id="cc3d-fn-pen" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#60a5fa"/>
+            <stop offset="100%" stop-color="#1d4ed8"/>
+          </linearGradient>
+        </defs>
+        <g filter="url(#cc3d-fn-sh)">
+          <rect x="36" y="22" width="60" height="84" rx="12" fill="#ffffff" stroke="#f1f5f9" stroke-width="2"/>
+          <rect x="32" y="32" width="10" height="5" rx="2.5" fill="#cbd5e1"/>
+          <rect x="32" y="48" width="10" height="5" rx="2.5" fill="#cbd5e1"/>
+          <rect x="32" y="64" width="10" height="5" rx="2.5" fill="#cbd5e1"/>
+          <rect x="32" y="80" width="10" height="5" rx="2.5" fill="#cbd5e1"/>
+          <rect x="48" y="38" width="34" height="4" rx="2" fill="#e9edf5"/>
+          <rect x="48" y="50" width="38" height="4" rx="2" fill="#e9edf5"/>
+          <rect x="48" y="62" width="28" height="4" rx="2" fill="#e9edf5"/>
+          <rect x="48" y="74" width="32" height="4" rx="2" fill="#e9edf5"/>
+          <polygon points="76,20 84,20 84,36 80,32 76,36" fill="#f97316"/>
+        </g>
+        <g transform="rotate(32 82 72)" filter="url(#cc3d-fn-float)">
+          <rect x="76" y="40" width="8" height="38" rx="2" fill="url(#cc3d-fn-pen)"/>
+          <rect x="76" y="78" width="8" height="6" rx="2" fill="#f472b6"/>
+          <polygon points="76,40 84,40 80,30" fill="#fed7aa"/>
+          <polygon points="78.5,33 81.5,33 80,30" fill="#1e293b"/>
+        </g>
+      </svg>`,
+      task: `<svg viewBox="0 0 128 128" class="w-24 h-24" fill="none">
+        <defs>
+          <filter id="cc3d-tk-sh" x="-20%" y="-20%" width="140%" height="150%">
+            <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#385780" flood-opacity="0.13"/>
+          </filter>
+          <filter id="cc3d-tk-badge" x="-30%" y="-30%" width="160%" height="160%">
+            <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#385780" flood-opacity="0.13"/>
+          </filter>
+          <radialGradient id="cc3d-tk-green" cx="35%" cy="35%" r="65%">
+            <stop offset="0%" stop-color="#bbf7d0"/>
+            <stop offset="40%" stop-color="#22c55e"/>
+            <stop offset="100%" stop-color="#15803d"/>
+          </radialGradient>
+          <radialGradient id="cc3d-tk-blue" cx="35%" cy="35%" r="65%">
+            <stop offset="0%" stop-color="#93c5fd"/>
+            <stop offset="40%" stop-color="#2563eb"/>
+            <stop offset="100%" stop-color="#1e40af"/>
+          </radialGradient>
+        </defs>
+        <g filter="url(#cc3d-tk-sh)">
+          <rect x="28" y="24" width="72" height="84" rx="14" fill="#ffffff" stroke="#f1f5f9" stroke-width="2"/>
+          <rect x="48" y="18" width="32" height="10" rx="4" fill="#e2e8f0" stroke="#ffffff" stroke-width="1.2"/>
+          <circle cx="64" cy="23" r="2" fill="#94a3b8"/>
+          <g filter="url(#cc3d-tk-badge)">
+            <circle cx="44" cy="46" r="7" fill="url(#cc3d-tk-green)" stroke="#ffffff" stroke-width="1.2"/>
+            <path d="M41 46 L43.5 48.5 L47.5 43.5" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </g>
+          <rect x="58" y="44" width="32" height="4" rx="2" fill="#cbd5e1"/>
+          <circle cx="44" cy="64" r="6" fill="url(#cc3d-tk-blue)" stroke="#ffffff" stroke-width="1.2"/>
+          <rect x="58" y="62" width="26" height="4" rx="2" fill="#e2e8f0"/>
+          <circle cx="44" cy="82" r="6" fill="#e9edf5" stroke="#e2e8f0" stroke-width="0.8"/>
+          <rect x="58" y="80" width="22" height="4" rx="2" fill="#e9edf5"/>
+        </g>
+      </svg>`,
+      planner: `<svg viewBox="0 0 128 128" class="w-24 h-24" fill="none">
+        <defs>
+          <filter id="cc3d-pl-sh" x="-20%" y="-20%" width="140%" height="150%">
+            <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#385780" flood-opacity="0.13"/>
+          </filter>
+          <filter id="cc3d-pl-badge" x="-30%" y="-30%" width="160%" height="160%">
+            <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#385780" flood-opacity="0.13"/>
+          </filter>
+          <radialGradient id="cc3d-pl-blue" cx="35%" cy="35%" r="65%">
+            <stop offset="0%" stop-color="#93c5fd"/>
+            <stop offset="40%" stop-color="#2563eb"/>
+            <stop offset="100%" stop-color="#1e40af"/>
+          </radialGradient>
+          <linearGradient id="cc3d-pl-orange" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#fb923c"/>
+            <stop offset="100%" stop-color="#ea580c"/>
+          </linearGradient>
+        </defs>
+        <g filter="url(#cc3d-pl-sh)">
+          <rect x="28" y="26" width="72" height="80" rx="14" fill="#ffffff" stroke="#f1f5f9" stroke-width="2"/>
+          <rect x="42" y="20" width="6" height="10" rx="3" fill="#cbd5e1"/>
+          <rect x="80" y="20" width="6" height="10" rx="3" fill="#cbd5e1"/>
+          <rect x="36" y="34" width="56" height="6" rx="3" fill="#e9edf5"/>
+          <circle cx="44" cy="50" r="3" fill="#e2e8f0"/>
+          <circle cx="57" cy="50" r="3" fill="#e2e8f0"/>
+          <circle cx="70" cy="50" r="3" fill="#e2e8f0"/>
+          <circle cx="83" cy="50" r="3" fill="#e2e8f0"/>
+          <g filter="url(#cc3d-pl-badge)">
+            <circle cx="57" cy="66" r="8" fill="url(#cc3d-pl-blue)" stroke="#ffffff" stroke-width="1.5"/>
+            <text x="57" y="69.2" font-family="sans-serif" font-size="7" font-weight="bold" fill="#ffffff" text-anchor="middle">18</text>
+          </g>
+          <circle cx="44" cy="66" r="3" fill="#e2e8f0"/>
+          <circle cx="70" cy="66" r="3" fill="#e2e8f0"/>
+          <circle cx="83" cy="66" r="3" fill="#e2e8f0"/>
+          <rect x="40" y="82" width="46" height="8" rx="4" fill="url(#cc3d-pl-orange)" stroke="#ffffff" stroke-width="1"/>
+        </g>
+      </svg>`
+    };
+
+    const CLAY_COLOR_SECTIONS = Object.fromEntries(Object.entries(SECTIONS).map(([key, item]) => [key, {
+      title: item.title, subtitle: item.subtitle, svg: CLAY_COLOR_SVGS[key]
+    }]));
+
+    /* ---------- Fifth set: pure neumorphism (soft UI, no glass) ---------- */
+    const neuDefs = (p) => `<defs>
+        <linearGradient id="${p}-surf" x1="0.12" y1="0" x2="0.8" y2="1">
+          <stop offset="0%" stop-color="#e6ecf6"/>
+          <stop offset="100%" stop-color="#fbfcff"/>
+        </linearGradient>
+        <linearGradient id="${p}-blue" x1="0.12" y1="0" x2="0.82" y2="1">
+          <stop offset="0%" stop-color="#7cb0ff"/>
+          <stop offset="100%" stop-color="#1e51cc"/>
+        </linearGradient>
+        <filter id="${p}-out" x="-35%" y="-35%" width="180%" height="180%">
+          <feDropShadow dx="3" dy="6" stdDeviation="6" flood-color="#8aa0c6" flood-opacity="0.42"/>
+          <feDropShadow dx="-2.5" dy="-3" stdDeviation="3" flood-color="#ffffff" flood-opacity="0.9"/>
+        </filter>
+        <filter id="${p}-in" x="-25%" y="-25%" width="150%" height="150%">
+          <feOffset in="SourceAlpha" dx="4" dy="5" result="o1"/>
+          <feGaussianBlur in="o1" stdDeviation="4" result="b1"/>
+          <feComposite in="SourceAlpha" in2="b1" operator="out" result="m1"/>
+          <feFlood flood-color="#8aa0c6" flood-opacity="0.9" result="f1"/>
+          <feComposite in="f1" in2="m1" operator="in" result="s1"/>
+          <feOffset in="SourceAlpha" dx="-3" dy="-3.5" result="o2"/>
+          <feGaussianBlur in="o2" stdDeviation="3" result="b2"/>
+          <feComposite in="SourceAlpha" in2="b2" operator="out" result="m2"/>
+          <feFlood flood-color="#ffffff" flood-opacity="0.95" result="f2"/>
+          <feComposite in="f2" in2="m2" operator="in" result="s2"/>
+          <feMerge>
+            <feMergeNode in="SourceGraphic"/>
+            <feMergeNode in="s1"/>
+            <feMergeNode in="s2"/>
+          </feMerge>
+        </filter>
+        <filter id="${p}-bout" x="-45%" y="-45%" width="190%" height="190%">
+          <feDropShadow dx="3" dy="4.5" stdDeviation="3.5" flood-color="#1c46ad" flood-opacity="0.42"/>
+          <feDropShadow dx="-2" dy="-2.5" stdDeviation="2.5" flood-color="#ffffff" flood-opacity="0.8"/>
+        </filter>
+      </defs>`;
+
+    /* the plate is a well pressed INTO the surface: inner shade top-left, inner light bottom-right */
+    const neuPlate = (p) => `<rect x="20" y="20" width="88" height="88" rx="27" fill="url(#${p}-surf)" filter="url(#${p}-in)"/>`;
+    /* engraved stroke: dark edge top-left, light edge bottom-right */
+    const carve = (geo, sw = 2.4, dark = '#7d93b8') => `
+        <g fill="none" stroke="#ffffff" stroke-opacity="0.95" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" transform="translate(1,1.3)">${geo}</g>
+        <g fill="none" stroke="${dark}" stroke-opacity="0.9" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">${geo}</g>`;
+    /* raised stroke on a blue pad: light edge on top, shadow underneath */
+    const emboss = (geo, sw = 3.4) => `
+        <g fill="none" stroke="#12327f" stroke-opacity="0.4" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" transform="translate(1,1.2)">${geo}</g>
+        <g fill="none" stroke="#ffffff" stroke-opacity="0.95" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">${geo}</g>`;
+    /* attrs for the single raised blue accent each icon is allowed */
+    const bl = (p) => `fill="url(#${p}-blue)" filter="url(#${p}-bout)"`;
+
+    const NEU_BODIES = {
+      drawing: (p) => `
+        ${carve(`<rect x="40" y="36" width="48" height="56" rx="8"/>`, 2.4)}
+        ${carve(`<path d="M48 54 h18 v16 h14"/><path d="M66 54 V44"/>`, 2.2)}
+        <rect x="68" y="76" width="16" height="10" rx="3.5" ${bl(p)}/>`,
+      model: (p) => `
+        ${carve(`<path d="M42 50 L64 62 L64 88 L42 76 Z"/><path d="M64 62 L86 50 L86 76 L64 88 Z"/>`, 2.2)}
+        <path d="M64 38 L86 50 L64 62 L42 50 Z" ${bl(p)}/>`,
+      structure: (p) => `
+        ${carve(`<path d="M64 52 v10 M44 72 V62 h40 v10"/>`, 2.2)}
+        ${carve(`<rect x="33" y="72" width="22" height="16" rx="5"/><rect x="73" y="72" width="22" height="16" rx="5"/>`, 2.2)}
+        <rect x="51" y="36" width="26" height="16" rx="6" ${bl(p)}/>`,
+      shared: (p) => `
+        ${carve(`<path d="M54 64 L84 46 M54 64 L84 82"/>`, 2.4)}
+        ${carve(`<circle cx="86" cy="44" r="8"/><circle cx="86" cy="82" r="8"/>`, 2.2)}
+        <circle cx="50" cy="64" r="12" ${bl(p)}/>`,
+      survey: (p) => `
+        ${carve(`<path d="M32 84 C38 62 54 48 76 50 C88 51 94 57 96 64"/>`, 2.1)}
+        ${carve(`<path d="M41 88 C45 70 58 58 76 60 C85 61 90 65 92 71"/>`, 2.1)}
+        ${carve(`<path d="M51 91 C54 79 63 70 76 71 C82 72 86 75 88 79"/>`, 2.1)}
+        <path d="M66 32 a12 12 0 0 1 12 12 c0 8.5 -12 19 -12 19 s-12 -10.5 -12 -19 a12 12 0 0 1 12 -12 Z" ${bl(p)}/>
+        ${emboss(`<path d="M66 44 v0.1"/>`, 6)}`,
+      "site-capture": (p) => `
+        ${carve(`<rect x="36" y="42" width="56" height="46" rx="9"/>`, 2.4)}
+        ${carve(`<path d="M43 81 L56 60 L67 74 L75 64 L85 81"/>`, 2.4)}
+        <circle cx="79" cy="54" r="6.5" ${bl(p)}/>`,
+      submission: (p) => `
+        ${carve(`<rect x="36" y="32" width="44" height="54" rx="8"/>`, 2.4)}
+        ${carve(`<path d="M46 48 h24 M46 58 h24 M46 68 h14"/>`, 2.1)}
+        <circle cx="84" cy="80" r="14" ${bl(p)}/>
+        ${emboss(`<path d="M78 80 l4.5 4.5 L91 75"/>`, 3.4)}`,
+      bimbox: (p) => `
+        ${carve(`<path d="M64 60 L86 72 L64 84 L42 72 Z"/>`, 2.1)}
+        ${carve(`<path d="M64 46 L86 58 L64 70 L42 58 Z"/>`, 2.1)}
+        <path d="M64 32 L86 44 L64 56 L42 44 Z" ${bl(p)}/>`,
+      files: (p) => `
+        ${carve(`<path d="M36 50 h16 l6 8 h34 v26 a5 5 0 0 1 -5 5 H41 a5 5 0 0 1 -5 -5 Z"/>`, 2.3)}
+        <rect x="36" y="62" width="56" height="28" rx="9" ${bl(p)}/>`,
+      search: (p) => `
+        ${carve(`<circle cx="58" cy="58" r="18"/>`, 2.6)}
+        ${carve(`<path d="M50 54 a9 9 0 0 1 8 -6"/>`, 1.8)}
+        <rect x="69" y="71" width="24" height="10" rx="5" transform="rotate(45 69 71)" ${bl(p)}/>`,
+      issue: (p) => `
+        <path d="M58.5 40 a7 7 0 0 1 11 0 L92 80 a7 7 0 0 1 -6 10.5 H42 A7 7 0 0 1 36 80 Z" ${bl(p)}/>
+        ${emboss(`<path d="M64 56 v14"/>`, 5)}
+        ${emboss(`<path d="M64 79 v0.1"/>`, 5.4)}`,
+      rfi: (p) => `
+        ${carve(`<path d="M40 36 h48 a9 9 0 0 1 9 9 v26 a9 9 0 0 1 -9 9 H62 l-13 11 v-11 h-9 a9 9 0 0 1 -9 -9 V45 a9 9 0 0 1 9 -9 Z"/>`, 2.4)}
+        <circle cx="64" cy="58" r="17" ${bl(p)}/>
+        ${emboss(`<path d="M58 53 a6 6 0 1 1 6 7 v3"/>`, 3.2)}
+        ${emboss(`<path d="M64 67 v0.1"/>`, 3.6)}`,
+      "field-note": (p) => `
+        ${carve(`<rect x="38" y="34" width="52" height="58" rx="9"/>`, 2.4)}
+        ${carve(`<path d="M50 60 h28 M50 70 h28 M50 80 h16"/>`, 2.1)}
+        <rect x="52" y="26" width="24" height="15" rx="7" ${bl(p)}/>`,
+      task: (p) => `
+        ${carve(`<rect x="36" y="58" width="16" height="16" rx="5"/><rect x="36" y="76" width="16" height="16" rx="5"/>`, 2.1)}
+        ${carve(`<path d="M58 48 h32 M58 66 h32 M58 84 h24"/>`, 2.3)}
+        <rect x="36" y="40" width="16" height="16" rx="5" ${bl(p)}/>
+        ${emboss(`<path d="M40 48 l3 3 l5.5 -6"/>`, 2.8)}`,
+      planner: (p) => `
+        ${carve(`<rect x="34" y="38" width="60" height="54" rx="10"/>`, 2.4)}
+        ${carve(`<circle cx="48" cy="70" r="3.2"/><circle cx="64" cy="70" r="3.2"/><circle cx="80" cy="70" r="3.2"/><circle cx="48" cy="82" r="3.2"/><circle cx="64" cy="82" r="3.2"/>`, 2)}
+        <path d="M34 48 a10 10 0 0 1 10 -10 h40 a10 10 0 0 1 10 10 v8 H34 Z" ${bl(p)}/>
+        ${emboss(`<path d="M50 30 v10 M78 30 v10"/>`, 3.4)}`
+    };
+
+    const NEUE_SVGS = Object.fromEntries(Object.keys(NEU_BODIES).map((key) => {
+      const p = 'neu-' + key.replace(/[^a-z]/g, '');
+      return [key, `<svg viewBox="0 0 128 128" class="w-24 h-24" fill="none">${neuDefs(p)}${neuPlate(p)}${NEU_BODIES[key](p)}</svg>`];
+    }));
+
+    const NEUE_SECTIONS = Object.fromEntries(Object.entries(SECTIONS).map(([key, item]) => [key, {
+      title: item.title,
+      subtitle: item.subtitle,
+      svg: NEUE_SVGS[key]
+    }]));
+
+    const LINEPRO_BODIES = {
+      drawing: `
+        <g transform="rotate(-4 60 60)">
+          <rect x="32" y="28" width="52" height="66" rx="5" fill="url(#lp-drawing-paper)" stroke="#415a77" stroke-width="0.9"/>
+          <path d="M40 46 h20 v12 h14 v22 h-34 z" fill="#ffffff" stroke="#415a77" stroke-width="0.78"/>
+          <path d="M48 46 v5 M60 53 h-7 M40 68 h9 M74 70 h-8" stroke="#9fb3c8" stroke-width="0.7"/>
+          <path d="M53 58 a9 9 0 0 1 9 9" stroke="#2563eb" stroke-width="0.75" stroke-dasharray="2 2.5"/>
+          <line x1="40" y1="37" x2="58" y2="37" stroke="#2563eb" stroke-width="0.9"/>
+          <line x1="62" y1="37" x2="68" y2="37" stroke="#cbd9e8" stroke-width="0.9"/>
+          <rect x="62" y="84" width="18" height="7" rx="1.5" fill="#eff6ff" stroke="#2563eb" stroke-width="0.7"/>
+        </g>
+        <g transform="rotate(12 88 96)">
+          <path d="M83 55 h10 v41 h-10 z" fill="#ffffff" stroke="#415a77" stroke-width="0.82"/>
+          <ellipse cx="88" cy="55" rx="5" ry="2.2" fill="#ffffff" stroke="#415a77" stroke-width="0.82"/>
+          <ellipse cx="88" cy="55" rx="1.9" ry="0.85" fill="url(#lp-drawing-accent)"/>
+        </g>
+        <circle cx="34" cy="21" r="1.7" fill="url(#lp-drawing-accent)"/>
+        <circle cx="97" cy="33" r="1.1" fill="#bcd0e8"/>`,
+      model: `
+        <polygon points="64,56 88,69 64,82 40,69" fill="url(#lp-model-paper)" stroke="#415a77" stroke-width="0.9"/>
+        <polygon points="40,69 64,82 64,95 40,82" fill="#f4f7fb" stroke="#415a77" stroke-width="0.9"/>
+        <polygon points="64,82 88,69 88,82 64,95" fill="#ffffff" stroke="#415a77" stroke-width="0.9"/>
+        <line x1="52" y1="75.5" x2="52" y2="88.5" stroke="#cbd9e8" stroke-width="0.7"/>
+        <line x1="76" y1="75.5" x2="76" y2="88.5" stroke="#cbd9e8" stroke-width="0.7"/>
+        <g transform="translate(0 -20)">
+          <polygon points="64,34 88,47 64,60 40,47" fill="#f6faff" stroke="#2563eb" stroke-width="0.85"/>
+          <polygon points="40,47 64,60 64,69 40,56" fill="#eff6ff" stroke="#2563eb" stroke-width="0.78"/>
+          <polygon points="64,60 88,47 88,56 64,69" fill="#dbeafe" stroke="#2563eb" stroke-width="0.78"/>
+          <circle cx="64" cy="34" r="2.1" fill="#ffffff" stroke="#2563eb" stroke-width="0.82"/>
+          <circle cx="40" cy="47" r="2.1" fill="#ffffff" stroke="#2563eb" stroke-width="0.82"/>
+          <circle cx="88" cy="47" r="2.1" fill="url(#lp-model-accent)"/>
+        </g>
+        <path d="M64 49 v7" stroke="#93c5fd" stroke-width="0.75" stroke-dasharray="1.8 2.6"/>`,
+      structure: `
+        <rect x="46" y="22" width="36" height="21" rx="6" fill="url(#lp-structure-paper)" stroke="#415a77" stroke-width="0.9"/>
+        <line x1="53" y1="30" x2="70" y2="30" stroke="#2563eb" stroke-width="0.9"/>
+        <line x1="53" y1="36" x2="64" y2="36" stroke="#cbd9e8" stroke-width="0.82"/>
+        <path d="M64 43 v17 M35 60 h58 M35 60 v8 M64 60 v8 M93 60 v8" stroke="#9fb3c8" stroke-width="0.75"/>
+        <circle cx="64" cy="60" r="1.9" fill="url(#lp-structure-accent)"/>
+        <rect x="22" y="68" width="26" height="22" rx="5" fill="#ffffff" stroke="#415a77" stroke-width="0.82"/>
+        <line x1="28" y1="77" x2="42" y2="77" stroke="#cbd9e8" stroke-width="0.75"/>
+        <line x1="28" y1="83" x2="37" y2="83" stroke="#e2eaf3" stroke-width="0.75"/>
+        <rect x="51" y="68" width="26" height="22" rx="5" fill="#f6faff" stroke="#2563eb" stroke-width="0.82"/>
+        <line x1="57" y1="77" x2="71" y2="77" stroke="#93c5fd" stroke-width="0.75"/>
+        <line x1="57" y1="83" x2="66" y2="83" stroke="#bfdbfe" stroke-width="0.75"/>
+        <rect x="80" y="68" width="26" height="22" rx="5" fill="#ffffff" stroke="#415a77" stroke-width="0.82"/>
+        <line x1="86" y1="77" x2="100" y2="77" stroke="#cbd9e8" stroke-width="0.75"/>
+        <line x1="86" y1="83" x2="95" y2="83" stroke="#e2eaf3" stroke-width="0.75"/>`,
+      shared: `
+        <rect x="20" y="52" width="34" height="42" rx="7" fill="url(#lp-shared-paper)" stroke="#415a77" stroke-width="0.9"/>
+        <line x1="27" y1="63" x2="46" y2="63" stroke="#cbd9e8" stroke-width="0.75"/>
+        <line x1="27" y1="70" x2="41" y2="70" stroke="#e2eaf3" stroke-width="0.75"/>
+        <line x1="27" y1="77" x2="46" y2="77" stroke="#e2eaf3" stroke-width="0.75"/>
+        <line x1="27" y1="84" x2="37" y2="84" stroke="#e2eaf3" stroke-width="0.75"/>
+        <rect x="74" y="52" width="34" height="42" rx="7" fill="#ffffff" stroke="#415a77" stroke-width="0.9"/>
+        <rect x="81" y="60" width="20" height="15" rx="3.5" fill="#eff6ff" stroke="#2563eb" stroke-width="0.75"/>
+        <path d="M84 70 l4.5 -5 3.5 4 3 -3 3 4" fill="none" stroke="#2563eb" stroke-width="0.75"/>
+        <line x1="81" y1="82" x2="97" y2="82" stroke="#cbd9e8" stroke-width="0.75"/>
+        <line x1="81" y1="88" x2="91" y2="88" stroke="#e2eaf3" stroke-width="0.75"/>
+        <path d="M40 46 C 50 22, 80 22, 90 46" fill="none" stroke="#bcd0e8" stroke-width="0.75" stroke-dasharray="2.4 3"/>
+        <g transform="translate(65 25) rotate(8)">
+          <path d="M-12 -5.5 L12 0 L-12 5.5 L-7.5 0 Z" fill="url(#lp-shared-accent)"/>
+          <path d="M-7.5 0 L-12 5.5" stroke="#1d4ed8" stroke-width="0.62"/>
+        </g>`,
+      survey: `
+        <path d="M26 85 q20 -6 38 -1 t38 -2" fill="none" stroke="#eaf0f7" stroke-width="0.75"/>
+        <path d="M30 92 q17 -5 34 -1 t34 -2" fill="none" stroke="#f1f5fa" stroke-width="0.75"/>
+        <path d="M46 52 L33 96 M46 52 L46 95 M46 52 L59 96" stroke="#415a77" stroke-width="0.9"/>
+        <line x1="39" y1="75" x2="53" y2="75" stroke="#9fb3c8" stroke-width="0.7"/>
+        <rect x="39" y="47" width="14" height="3.4" rx="1.7" fill="#415a77"/>
+        <rect x="41" y="33" width="10" height="14" rx="3" fill="url(#lp-survey-paper)" stroke="#415a77" stroke-width="0.82"/>
+        <path d="M51 35 L61 32 v10 l-10 -3 z" fill="url(#lp-survey-accent)" stroke="#415a77" stroke-width="0.75"/>
+        <line x1="63" y1="37" x2="87" y2="37" stroke="#2563eb" stroke-width="0.75" stroke-dasharray="2 2.6"/>
+        <line x1="90" y1="30" x2="90" y2="96" stroke="#415a77" stroke-width="0.9"/>
+        <line x1="86" y1="60" x2="94" y2="60" stroke="#9fb3c8" stroke-width="0.7"/>
+        <line x1="86" y1="72" x2="94" y2="72" stroke="#9fb3c8" stroke-width="0.7"/>
+        <polygon points="90,31 97,37 90,43 83,37" fill="#ffffff" stroke="#2563eb" stroke-width="0.82"/>
+        <circle cx="90" cy="37" r="1.9" fill="url(#lp-survey-accent)"/>`,
+      'site-capture': `
+        <ellipse cx="64" cy="54" rx="41" ry="14" fill="none" stroke="#bcd0e8" stroke-width="0.75" stroke-dasharray="2.4 3" transform="rotate(-10 64 54)"/>
+        <path d="M64 66 L48 96 M64 66 L64 96 M64 66 L80 96" stroke="#415a77" stroke-width="0.9"/>
+        <line x1="55" y1="83" x2="73" y2="83" stroke="#9fb3c8" stroke-width="0.7"/>
+        <path d="M55 43 L58 37 h12 l3 6" fill="#ffffff" stroke="#415a77" stroke-width="0.82"/>
+        <rect x="45" y="42" width="38" height="25" rx="7" fill="url(#lp-site-capture-paper)" stroke="#415a77" stroke-width="0.9"/>
+        <circle cx="64" cy="54.5" r="9.5" fill="#ffffff" stroke="#415a77" stroke-width="0.82"/>
+        <circle cx="64" cy="54.5" r="5.2" fill="url(#lp-site-capture-accent)"/>
+        <circle cx="62" cy="52.5" r="1.4" fill="#ffffff" fill-opacity="0.9"/>
+        <rect x="73" y="46" width="6" height="2.6" rx="1.3" fill="#2563eb"/>
+        <g transform="translate(94 25)">
+          <rect x="-7" y="-4.5" width="14" height="9.5" rx="3.5" fill="#ffffff" stroke="#415a77" stroke-width="0.75"/>
+          <circle cx="0" cy="0.5" r="2.1" fill="url(#lp-site-capture-accent)"/>
+          <path d="M-7 -4 l-4 -4 M7 -4 l4 -4" stroke="#415a77" stroke-width="0.75"/>
+          <line x1="-17" y1="-8" x2="-6" y2="-8" stroke="#2563eb" stroke-width="0.9"/>
+          <line x1="6" y1="-8" x2="17" y2="-8" stroke="#2563eb" stroke-width="0.9"/>
+        </g>`,
+      submission: `
+        <rect x="48" y="26" width="32" height="40" rx="4" fill="#ffffff" stroke="#415a77" stroke-width="0.85"/>
+        <line x1="55" y1="36" x2="73" y2="36" stroke="#2563eb" stroke-width="0.9"/>
+        <line x1="55" y1="43" x2="70" y2="43" stroke="#cbd9e8" stroke-width="0.75"/>
+        <line x1="55" y1="50" x2="73" y2="50" stroke="#e2eaf3" stroke-width="0.75"/>
+        <line x1="55" y1="57" x2="66" y2="57" stroke="#e2eaf3" stroke-width="0.75"/>
+        <path d="M36 60 h56 a4 4 0 0 1 4 4 v26 a4 4 0 0 1 -4 4 h-56 a4 4 0 0 1 -4 -4 v-26 a4 4 0 0 1 4 -4 z" fill="url(#lp-submission-paper)" stroke="#415a77" stroke-width="0.9"/>
+        <path d="M33 64 L64 82 L95 64" fill="none" stroke="#9fb3c8" stroke-width="0.75"/>
+        <path d="M33 90 L52 76 M95 90 L76 76" fill="none" stroke="#e2eaf3" stroke-width="0.75"/>
+        <circle cx="90" cy="60" r="8" fill="#ffffff" stroke="#2563eb" stroke-width="0.82"/>
+        <path d="M86.5 60 L89 62.5 L93.5 57.5" fill="none" stroke="url(#lp-submission-accent)" stroke-width="1.15"/>`,
+      bimbox: `
+        <polygon points="40,70 64,82 88,70 88,86 64,98 40,86" fill="url(#lp-bimbox-paper)" stroke="#415a77" stroke-width="0.9"/>
+        <polygon points="64,82 88,70 88,86 64,98" fill="#f4f7fb" stroke="#415a77" stroke-width="0.9"/>
+        <line x1="64" y1="82" x2="64" y2="98" stroke="#415a77" stroke-width="0.82"/>
+        <polygon points="40,70 28,63 48,57 64,64" fill="#ffffff" stroke="#415a77" stroke-width="0.78"/>
+        <polygon points="88,70 100,63 80,57 64,64" fill="#ffffff" stroke="#415a77" stroke-width="0.78"/>
+        <polygon points="64,26 78,34 64,42 50,34" fill="#f6faff" stroke="#2563eb" stroke-width="0.82"/>
+        <polygon points="50,34 64,42 64,56 50,48" fill="#eff6ff" stroke="#2563eb" stroke-width="0.78"/>
+        <polygon points="64,42 78,34 78,48 64,56" fill="#dbeafe" stroke="#2563eb" stroke-width="0.78"/>
+        <path d="M43 42 l-5 -3 M85 42 l5 -3" stroke="#93c5fd" stroke-width="0.82"/>
+        <circle cx="64" cy="20" r="1.6" fill="url(#lp-bimbox-accent)"/>`,
+      files: `
+        <path d="M26 44 h22 l5 7 h47 a5 5 0 0 1 5 5 v12 h-84 v-19 a5 5 0 0 1 5 -5 z" fill="url(#lp-files-paper)" stroke="#415a77" stroke-width="0.9"/>
+        <g transform="rotate(-9 62 60)">
+          <rect x="44" y="34" width="34" height="44" rx="3" fill="#ffffff" stroke="#415a77" stroke-width="0.75"/>
+        </g>
+        <g transform="rotate(5 66 58)">
+          <rect x="50" y="30" width="34" height="44" rx="3" fill="#ffffff" stroke="#415a77" stroke-width="0.82"/>
+          <line x1="57" y1="40" x2="77" y2="40" stroke="#2563eb" stroke-width="0.9"/>
+          <line x1="57" y1="47" x2="73" y2="47" stroke="#cbd9e8" stroke-width="0.75"/>
+          <line x1="57" y1="54" x2="77" y2="54" stroke="#e2eaf3" stroke-width="0.75"/>
+        </g>
+        <path d="M22 62 h84 a4 4 0 0 1 4 4.4 l-3 25 a5 5 0 0 1 -5 4.6 h-76 a5 5 0 0 1 -5 -4.6 l-3 -25 a4 4 0 0 1 4 -4.4 z" fill="#ffffff" stroke="#415a77" stroke-width="0.9"/>
+        <line x1="54" y1="79" x2="74" y2="79" stroke="#dbe6f2" stroke-width="0.82"/>
+        <circle cx="47" cy="79" r="1.8" fill="url(#lp-files-accent)"/>`,
+      search: `
+        <g transform="rotate(-4 58 58)">
+          <rect x="34" y="28" width="48" height="62" rx="5" fill="url(#lp-search-paper)" stroke="#415a77" stroke-width="0.9"/>
+          <line x1="42" y1="40" x2="66" y2="40" stroke="#e2eaf3" stroke-width="0.82"/>
+          <line x1="42" y1="50" x2="74" y2="50" stroke="#eef3f9" stroke-width="0.82"/>
+          <line x1="42" y1="60" x2="62" y2="60" stroke="#eef3f9" stroke-width="0.82"/>
+          <line x1="42" y1="70" x2="74" y2="70" stroke="#eef3f9" stroke-width="0.82"/>
+          <line x1="42" y1="80" x2="58" y2="80" stroke="#eef3f9" stroke-width="0.82"/>
+        </g>
+        <line x1="79" y1="71" x2="97" y2="91" stroke="#415a77" stroke-width="1.8"/>
+        <line x1="83" y1="76" x2="94" y2="88" stroke="#cbd9e8" stroke-width="0.75"/>
+        <circle cx="66" cy="58" r="23" fill="#ffffff" fill-opacity="0.5" stroke="#415a77" stroke-width="1.0"/>
+        <path d="M51 49 A 17 17 0 0 1 68 39" fill="none" stroke="#dbe6f2" stroke-width="0.9"/>
+        <circle cx="66" cy="58" r="9" fill="none" stroke="#93c5fd" stroke-width="0.82" stroke-dasharray="2.4 3"/>
+        <line x1="62.5" y1="58" x2="69.5" y2="58" stroke="url(#lp-search-accent)" stroke-width="1.15"/>`,
+      issue: `
+        <rect x="35" y="30" width="52" height="66" rx="6" fill="#eff6ff" stroke="#cbd9e8" stroke-width="0.85" transform="rotate(-7 61 63)"/>
+        <path d="M40 24h32l14 14v51a5 5 0 0 1-5 5H40a5 5 0 0 1-5-5V29a5 5 0 0 1 5-5z" fill="url(#lp-issue-paper)" stroke="#415a77" stroke-width="0.9"/>
+        <path d="M72 24v10a4 4 0 0 0 4 4h10" fill="#dbeafe" stroke="#415a77" stroke-width="0.9"/>
+        <path d="M45 42h16" stroke="#2563eb" stroke-width="1.6"/>
+        <rect x="45" y="53" width="5" height="5" rx="1.3" fill="#dbeafe" stroke="#93c5fd" stroke-width="0.75"/>
+        <rect x="45" y="65" width="5" height="5" rx="1.3" fill="#dbeafe" stroke="#93c5fd" stroke-width="0.75"/>
+        <path d="M56 55.5h18M56 67.5h12M45 80h17" stroke="#9fb3c8" stroke-width="1"/>
+        <circle cx="84" cy="80" r="15" fill="#ffffff" stroke="#2563eb" stroke-width="1"/>
+        <circle cx="84" cy="80" r="11.5" fill="#eff6ff"/>
+        <path d="M84 73v8" stroke="#2563eb" stroke-width="2"/>
+        <circle cx="84" cy="86" r="1.3" fill="#2563eb"/>`,
+      rfi: `
+        <rect x="32" y="26" width="54" height="40" rx="9" fill="url(#lp-rfi-paper)" stroke="#415a77" stroke-width="0.9"/>
+        <path d="M48 66 v11 l13 -11" fill="#ffffff" stroke="#415a77" stroke-width="0.9"/>
+        <path d="M51 41 c0 -8 12 -9 14 -2 c1.6 6 -6 7 -6 12" fill="none" stroke="url(#lp-rfi-accent)" stroke-width="1.5"/>
+        <circle cx="59" cy="57" r="1.6" fill="#2563eb"/>
+        <line x1="72" y1="38" x2="79" y2="38" stroke="#cbd9e8" stroke-width="0.82"/>
+        <line x1="72" y1="45" x2="79" y2="45" stroke="#e2eaf3" stroke-width="0.82"/>
+        <rect x="66" y="72" width="38" height="22" rx="8" fill="#ffffff" stroke="#415a77" stroke-width="0.82"/>
+        <circle cx="77" cy="83" r="1.9" fill="#cbd9e8"/>
+        <circle cx="85" cy="83" r="1.9" fill="#9fb3c8"/>
+        <circle cx="93" cy="83" r="1.9" fill="url(#lp-rfi-accent)"/>`,
+      'field-note': `
+        <rect x="38" y="30" width="46" height="62" rx="5" fill="url(#lp-field-note-paper)" stroke="#415a77" stroke-width="0.9"/>
+        <line x1="48" y1="31" x2="48" y2="91" stroke="#e8eef6" stroke-width="0.75"/>
+        <path d="M34 40 h10 M34 52 h10 M34 64 h10 M34 76 h10" stroke="#415a77" stroke-width="0.9"/>
+        <line x1="54" y1="44" x2="76" y2="44" stroke="#2563eb" stroke-width="0.9"/>
+        <line x1="54" y1="54" x2="72" y2="54" stroke="#cbd9e8" stroke-width="0.75"/>
+        <line x1="54" y1="64" x2="78" y2="64" stroke="#e2eaf3" stroke-width="0.75"/>
+        <line x1="54" y1="74" x2="68" y2="74" stroke="#e2eaf3" stroke-width="0.75"/>
+        <circle cx="49" cy="84" r="1.7" fill="url(#lp-field-note-accent)"/>
+        <line x1="56" y1="84" x2="70" y2="84" stroke="#e2eaf3" stroke-width="0.75"/>
+        <g transform="rotate(30 90 58)">
+          <path d="M86 26 h9 v38 h-9 z" fill="#ffffff" stroke="#415a77" stroke-width="0.82"/>
+          <path d="M86 64 h9 l-4.5 8 z" fill="url(#lp-field-note-accent)" stroke="#415a77" stroke-width="0.75"/>
+          <line x1="86" y1="36" x2="95" y2="36" stroke="#2563eb" stroke-width="0.9"/>
+        </g>`,
+      task: `
+        <rect x="28" y="34" width="52" height="58" rx="7" fill="url(#lp-task-paper)" stroke="#415a77" stroke-width="0.9"/>
+        <rect x="44" y="29" width="20" height="8.5" rx="3.5" fill="#ffffff" stroke="#415a77" stroke-width="0.82"/>
+        <rect x="37" y="47" width="10" height="10" rx="2.5" fill="#eff6ff" stroke="#2563eb" stroke-width="0.82"/>
+        <path d="M39.5 52 L41.8 54.4 L45 50.4" fill="none" stroke="#2563eb" stroke-width="1.0"/>
+        <line x1="53" y1="52" x2="71" y2="52" stroke="#cbd9e8" stroke-width="0.82"/>
+        <rect x="37" y="63" width="10" height="10" rx="2.5" fill="#ffffff" stroke="#415a77" stroke-width="0.75"/>
+        <line x1="53" y1="68" x2="69" y2="68" stroke="#e2eaf3" stroke-width="0.82"/>
+        <rect x="37" y="79" width="10" height="10" rx="2.5" fill="#ffffff" stroke="#415a77" stroke-width="0.75"/>
+        <line x1="53" y1="84" x2="65" y2="84" stroke="#e2eaf3" stroke-width="0.82"/>
+        <g transform="translate(91 70)">
+          <circle r="14" fill="#ffffff" stroke="#e6edf6" stroke-width="2.0"/>
+          <circle r="14" fill="none" stroke="url(#lp-task-accent)" stroke-width="2.0" stroke-dasharray="53 88" stroke-linecap="round" transform="rotate(-90)"/>
+          <path d="M-4.5 0 L-1.5 3.2 L5 -3.6" fill="none" stroke="#2563eb" stroke-width="1.2"/>
+        </g>`,
+      planner: `
+        <rect x="26" y="32" width="76" height="60" rx="8" fill="url(#lp-planner-paper)" stroke="#415a77" stroke-width="0.9"/>
+        <line x1="26" y1="46" x2="102" y2="46" stroke="#415a77" stroke-width="0.82"/>
+        <path d="M44 27 v8 M64 27 v8 M84 27 v8" stroke="#415a77" stroke-width="1.0"/>
+        <line x1="34" y1="39" x2="48" y2="39" stroke="#cbd9e8" stroke-width="0.82"/>
+        <rect x="34" y="54" width="30" height="6.5" rx="3.25" fill="url(#lp-planner-accent)"/>
+        <rect x="48" y="66" width="32" height="6.5" rx="3.25" fill="#dbeafe" stroke="#93c5fd" stroke-width="0.7"/>
+        <rect x="62" y="78" width="24" height="6.5" rx="3.25" fill="#ffffff" stroke="#cbd9e8" stroke-width="0.7"/>
+        <path d="M64 60.5 v5.5 M80 72.5 v5.5" stroke="#cbd9e8" stroke-width="0.7" stroke-dasharray="1.6 2.2"/>
+        <rect x="86" y="53" width="9" height="9" rx="1.8" transform="rotate(45 90.5 57.5)" fill="#ffffff" stroke="#2563eb" stroke-width="0.82"/>
+        <circle cx="90.5" cy="57.5" r="1.6" fill="url(#lp-planner-accent)"/>`
+    };
+
+    function lineProSvg(key) {
+      return `<svg viewBox="0 0 128 128" class="w-24 h-24" fill="none">
+        <defs>
+          <radialGradient id="lp-${key}-halo" cx="50%" cy="46%" r="54%">
+            <stop offset="0%" stop-color="#dbeafe" stop-opacity="0.55"/>
+            <stop offset="58%" stop-color="#dbeafe" stop-opacity="0.16"/>
+            <stop offset="100%" stop-color="#dbeafe" stop-opacity="0"/>
+          </radialGradient>
+          <radialGradient id="lp-${key}-shadow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#415a77" stop-opacity="0.13"/>
+            <stop offset="100%" stop-color="#415a77" stop-opacity="0"/>
+          </radialGradient>
+          <linearGradient id="lp-${key}-accent" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#60a5fa"/>
+            <stop offset="100%" stop-color="#1d4ed8"/>
+          </linearGradient>
+          <linearGradient id="lp-${key}-paper" x1="0" y1="0" x2="0.35" y2="1">
+            <stop offset="0%" stop-color="#ffffff"/>
+            <stop offset="100%" stop-color="#f4f8fc"/>
+          </linearGradient>
+        </defs>
+        <circle cx="64" cy="58" r="44" fill="url(#lp-${key}-halo)"/>
+        <ellipse cx="64" cy="99" rx="33" ry="6" fill="url(#lp-${key}-shadow)"/>
+        <line x1="22" y1="99" x2="106" y2="99" stroke="#c9d6e5" stroke-width="0.75" stroke-linecap="round" stroke-dasharray="1.5 5"/>
+        <g stroke-linecap="round" stroke-linejoin="round">${LINEPRO_BODIES[key]}</g>
+      </svg>`;
+    }
+
+    const LINEPRO_SECTIONS = Object.fromEntries(Object.entries(SECTIONS).map(([key, item]) => [key, {
+      title: item.title,
+      subtitle: item.subtitle,
+      svg: lineProSvg(key)
+    }]));
+
+    /* ---------- Seventh set: duotone glyphs — flat, geometric, no shadows.
+       Rule: the container/backing shape is tint, the subject is solid blue. ---------- */
+    const DUO = { solid: '#2563eb', mid: '#93c5fd', tint: '#bfdbfe' };
+
+    const DUO_BODIES = {
+      drawing: `
+        <rect x="26" y="18" width="76" height="92" rx="14" fill="${DUO.tint}"/>
+        <path d="M42 40 H86 V56 M86 78 V88 H42 V40" fill="none" stroke="${DUO.solid}" stroke-width="7" stroke-linejoin="round" stroke-linecap="round"/>
+        <path d="M86 78 a22 22 0 0 0 -22 -22" fill="none" stroke="${DUO.mid}" stroke-width="5" stroke-linecap="round"/>`,
+      model: `
+        <path d="M64 22 L104 45 L64 68 L24 45 Z" fill="${DUO.solid}"/>
+        <path d="M24 52 L62 74 L62 110 L24 88 Z" fill="${DUO.tint}"/>
+        <path d="M104 52 L104 88 L66 110 L66 74 Z" fill="${DUO.mid}"/>`,
+      structure: `
+        <rect x="50" y="20" width="28" height="24" rx="8" fill="${DUO.solid}"/>
+        <rect x="61" y="44" width="6" height="12" rx="3" fill="${DUO.mid}"/>
+        <rect x="41" y="53" width="46" height="6" rx="3" fill="${DUO.mid}"/>
+        <rect x="41" y="53" width="6" height="18" rx="3" fill="${DUO.mid}"/>
+        <rect x="81" y="53" width="6" height="18" rx="3" fill="${DUO.mid}"/>
+        <rect x="26" y="70" width="36" height="26" rx="8" fill="${DUO.tint}"/>
+        <rect x="66" y="70" width="36" height="26" rx="8" fill="${DUO.tint}"/>`,
+      shared: `
+        <path d="M46 58 L84 40 M46 70 L84 88" stroke="${DUO.mid}" stroke-width="8" stroke-linecap="round"/>
+        <circle cx="90" cy="36" r="12" fill="${DUO.tint}"/>
+        <circle cx="90" cy="92" r="12" fill="${DUO.tint}"/>
+        <circle cx="38" cy="64" r="16" fill="${DUO.solid}"/>`,
+      survey: `
+        <circle cx="64" cy="64" r="30" fill="none" stroke="${DUO.tint}" stroke-width="11"/>
+        <circle cx="64" cy="64" r="11" fill="${DUO.solid}"/>
+        <rect x="61" y="16" width="6" height="16" rx="3" fill="${DUO.mid}"/>
+        <rect x="61" y="96" width="6" height="16" rx="3" fill="${DUO.mid}"/>
+        <rect x="16" y="61" width="16" height="6" rx="3" fill="${DUO.mid}"/>
+        <rect x="96" y="61" width="16" height="6" rx="3" fill="${DUO.mid}"/>`,
+      "site-capture": `
+        <rect x="20" y="28" width="88" height="72" rx="16" fill="${DUO.tint}"/>
+        <circle cx="44" cy="50" r="8" fill="${DUO.solid}"/>
+        <path d="M32 88 L54 58 L68 76 L80 62 L98 88 Z" fill="${DUO.solid}"/>`,
+      submission: `
+        <path d="M64 14 L86 38 H42 Z" fill="${DUO.solid}"/>
+        <rect x="56" y="34" width="16" height="30" rx="5" fill="${DUO.solid}"/>
+        <rect x="20" y="58" width="88" height="46" rx="14" fill="${DUO.tint}"/>`,
+      bimbox: `
+        <path d="M64 18 L104 41 L64 64 L24 41 Z" fill="${DUO.solid}"/>
+        <path d="M24 59 L38 51 L64 66 L90 51 L104 59 L64 82 Z" fill="${DUO.mid}"/>
+        <path d="M24 80 L38 72 L64 87 L90 72 L104 80 L64 103 Z" fill="${DUO.tint}"/>`,
+      files: `
+        <path d="M22 44 a10 10 0 0 1 10 -10 h18 a7 7 0 0 1 5.6 2.8 L62 44 h34 a10 10 0 0 1 10 10 v12 H22 Z" fill="${DUO.mid}"/>
+        <rect x="22" y="56" width="84" height="46" rx="14" fill="${DUO.solid}"/>`,
+      search: `
+        <circle cx="56" cy="56" r="28" fill="none" stroke="${DUO.tint}" stroke-width="12"/>
+        <path d="M78 78 L100 100" stroke="${DUO.solid}" stroke-width="12" stroke-linecap="round"/>`,
+      issue: `
+        <path d="M64 34 L96 88 H32 Z" fill="${DUO.tint}" stroke="${DUO.tint}" stroke-width="15" stroke-linejoin="round"/>
+        <rect x="58" y="48" width="12" height="26" rx="6" fill="${DUO.solid}"/>
+        <circle cx="64" cy="85" r="6.5" fill="${DUO.solid}"/>`,
+      rfi: `
+        <path d="M24 34 a14 14 0 0 1 14 -14 h52 a14 14 0 0 1 14 14 v34 a14 14 0 0 1 -14 14 H60 l-18 16 v-16 h-4 a14 14 0 0 1 -14 -14 Z" fill="${DUO.tint}"/>
+        <path d="M55 45 a10 10 0 1 1 10 12 v3" fill="none" stroke="${DUO.solid}" stroke-width="9" stroke-linecap="round"/>
+        <circle cx="65" cy="71" r="5.5" fill="${DUO.solid}"/>`,
+      "field-note": `
+        <rect x="28" y="26" width="72" height="82" rx="16" fill="${DUO.tint}"/>
+        <rect x="48" y="14" width="32" height="20" rx="9" fill="${DUO.solid}"/>
+        <rect x="44" y="56" width="40" height="8" rx="4" fill="${DUO.solid}"/>
+        <rect x="44" y="74" width="26" height="8" rx="4" fill="${DUO.solid}"/>`,
+      task: `
+        <rect x="20" y="28" width="88" height="72" rx="16" fill="${DUO.tint}"/>
+        <path d="M34 50 L43 59 L59 42" fill="none" stroke="${DUO.solid}" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="68" y="46" width="26" height="8" rx="4" fill="${DUO.solid}"/>
+        <path d="M34 78 L43 87 L59 70" fill="none" stroke="${DUO.mid}" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="68" y="74" width="26" height="8" rx="4" fill="${DUO.mid}"/>`,
+      planner: `
+        <rect x="20" y="28" width="88" height="80" rx="16" fill="${DUO.tint}"/>
+        <path d="M20 44 a16 16 0 0 1 16 -16 h56 a16 16 0 0 1 16 16 v8 H20 Z" fill="${DUO.solid}"/>
+        <rect x="40" y="14" width="10" height="22" rx="5" fill="${DUO.solid}"/>
+        <rect x="78" y="14" width="10" height="22" rx="5" fill="${DUO.solid}"/>
+        <rect x="34" y="68" width="30" height="10" rx="5" fill="${DUO.solid}"/>
+        <rect x="34" y="86" width="48" height="10" rx="5" fill="${DUO.mid}"/>`
+    };
+
+    const ALLBLUE_SVGS = Object.fromEntries(Object.entries(DUO_BODIES).map(([key, body]) =>
+      [key, `<svg viewBox="0 0 128 128" class="w-24 h-24" fill="none">${body}</svg>`]));
+
+    const ALLBLUE_SECTIONS = Object.fromEntries(Object.entries(SECTIONS).map(([key, item]) => [key, {
+      title: item.title,
+      subtitle: item.subtitle,
+      svg: ALLBLUE_SVGS[key]
+    }]));
+
+    const LINECOLOR_BODIES = {
+      'drawing': `
+    <g transform="rotate(-4 60 60)">
+      <rect x="32" y="28" width="52" height="66" rx="5" fill="#f0f9ff" stroke="#475569" stroke-width="0.9"/>
+      <path d="M40 46 h20 v12 h14 v22 h-34 z" fill="#ffffff" stroke="#475569" stroke-width="0.78"/>
+      <path d="M48 46 v5 M60 53 h-7 M40 68 h9 M74 70 h-8" stroke="#cbd5e1" stroke-width="0.7"/>
+      <path d="M53 58 a9 9 0 0 1 9 9" stroke="#0891b2" stroke-width="0.8" stroke-dasharray="2 2.5"/>
+      <line x1="40" y1="37" x2="58" y2="37" stroke="#2563eb" stroke-width="0.9"/>
+      <line x1="62" y1="37" x2="68" y2="37" stroke="#38bdf8" stroke-width="0.9"/>
+      <rect x="62" y="84" width="18" height="7" rx="1.5" fill="#ecfeff" stroke="#0891b2" stroke-width="0.7"/>
+    </g>
+    <g transform="rotate(12 88 96)">
+      <path d="M83 55 h10 v41 h-10 z" fill="#ffffff" stroke="#475569" stroke-width="0.82"/>
+      <ellipse cx="88" cy="55" rx="5" ry="2.2" fill="#ede9fe" stroke="#8b5cf6" stroke-width="0.82"/>
+      <ellipse cx="88" cy="55" rx="1.9" ry="0.85" fill="#8b5cf6"/>
+    </g>
+    <circle cx="34" cy="21" r="2" fill="#2563eb"/>
+    <circle cx="97" cy="33" r="1.5" fill="#0891b2"/>`,
+      'model': `
+    <path d="M23 87l40-22 42 23-40 23z" fill="#f0f9ff" stroke="#bfdbfe" stroke-width="0.85"/>
+    <path d="M40 40l25 14v45L40 85z" fill="#eff6ff" stroke="#2563eb" stroke-width="1"/>
+    <path d="M65 54l25-14v45L65 99z" fill="#dbeafe" stroke="#2563eb" stroke-width="1"/>
+    <path d="M40 40l25-14 25 14-25 14z" fill="#ecfeff" stroke="#0891b2" stroke-width="1"/>
+    <path d="M49 40l16-9 16 9-16 9z" fill="#ffffff" stroke="#67e8f9" stroke-width="0.8"/>
+    <path d="M40 55l25 14 25-14M40 70l25 14 25-14" fill="none" stroke="#60a5fa" stroke-width="0.85"/>
+    <path d="M48 45v44M56 49v44M73 50v44M82 45v44" fill="none" stroke="#93c5fd" stroke-width="0.8"/>
+    <path d="M60 96V86l5 3v10" fill="#2563eb"/>
+    <path d="M27 76V53l7-4M97 52l7 4v21" fill="none" stroke="#8b5cf6" stroke-width="0.9"/>
+    <circle cx="27" cy="76" r="2" fill="#ffffff" stroke="#8b5cf6" stroke-width="0.9"/>
+    <circle cx="104" cy="77" r="2" fill="#0891b2"/>`,
+      'structure': `
+    <rect x="46" y="22" width="36" height="21" rx="6" fill="#eff6ff" stroke="#2563eb" stroke-width="0.9"/>
+    <line x1="53" y1="30" x2="70" y2="30" stroke="#2563eb" stroke-width="0.9"/>
+    <line x1="53" y1="36" x2="64" y2="36" stroke="#93c5fd" stroke-width="0.82"/>
+    <path d="M64 43 v17 M35 60 h58 M35 60 v8 M64 60 v8 M93 60 v8" stroke="#94a3b8" stroke-width="0.75"/>
+    <circle cx="64" cy="60" r="2.2" fill="#3b82f6"/>
+    <rect x="22" y="68" width="26" height="22" rx="5" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="0.82"/>
+    <line x1="28" y1="77" x2="42" y2="77" stroke="#8b5cf6" stroke-width="0.75"/>
+    <line x1="28" y1="83" x2="37" y2="83" stroke="#c4b5fd" stroke-width="0.75"/>
+    <rect x="51" y="68" width="26" height="22" rx="5" fill="#eff6ff" stroke="#2563eb" stroke-width="0.82"/>
+    <line x1="57" y1="77" x2="71" y2="77" stroke="#2563eb" stroke-width="0.75"/>
+    <line x1="57" y1="83" x2="66" y2="83" stroke="#93c5fd" stroke-width="0.75"/>
+    <rect x="80" y="68" width="26" height="22" rx="5" fill="#ecfeff" stroke="#0891b2" stroke-width="0.82"/>
+    <line x1="86" y1="77" x2="100" y2="77" stroke="#0891b2" stroke-width="0.75"/>
+    <line x1="86" y1="83" x2="95" y2="83" stroke="#67e8f9" stroke-width="0.75"/>`,
+      'shared': `
+    <rect x="20" y="52" width="34" height="42" rx="7" fill="#eff6ff" stroke="#2563eb" stroke-width="0.9"/>
+    <line x1="27" y1="63" x2="46" y2="63" stroke="#2563eb" stroke-width="0.75"/>
+    <line x1="27" y1="70" x2="41" y2="70" stroke="#93c5fd" stroke-width="0.75"/>
+    <line x1="27" y1="77" x2="46" y2="77" stroke="#93c5fd" stroke-width="0.75"/>
+    <line x1="27" y1="84" x2="37" y2="84" stroke="#93c5fd" stroke-width="0.75"/>
+    <rect x="74" y="52" width="34" height="42" rx="7" fill="#ecfeff" stroke="#0891b2" stroke-width="0.9"/>
+    <rect x="81" y="60" width="20" height="15" rx="3.5" fill="#cffafe" stroke="#14b8a6" stroke-width="0.75"/>
+    <path d="M84 70 l4.5 -5 3.5 4 3 -3 3 4" fill="none" stroke="#0891b2" stroke-width="0.75"/>
+    <line x1="81" y1="82" x2="97" y2="82" stroke="#67e8f9" stroke-width="0.75"/>
+    <line x1="81" y1="88" x2="91" y2="88" stroke="#67e8f9" stroke-width="0.75"/>
+    <path d="M40 46 C 50 22, 80 22, 90 46" fill="none" stroke="#38bdf8" stroke-width="0.8" stroke-dasharray="2.4 3"/>
+    <g transform="translate(65 25) rotate(8)">
+      <path d="M-12 -5.5 L12 0 L-12 5.5 L-7.5 0 Z" fill="#8b5cf6"/>
+      <path d="M-7.5 0 L-12 5.5" stroke="#7c3aed" stroke-width="0.7"/>
+    </g>`,
+      'survey': `
+    <path d="M26 85 q20 -6 38 -1 t38 -2" fill="none" stroke="#bfdbfe" stroke-width="0.75"/>
+    <path d="M30 92 q17 -5 34 -1 t34 -2" fill="none" stroke="#a5f3fc" stroke-width="0.75"/>
+    <path d="M46 52 L33 96 M46 52 L46 95 M46 52 L59 96" stroke="#475569" stroke-width="1.0"/>
+    <line x1="39" y1="75" x2="53" y2="75" stroke="#2563eb" stroke-width="0.85"/>
+    <rect x="39" y="47" width="14" height="3.4" rx="1.7" fill="#1d4ed8"/>
+    <rect x="41" y="33" width="10" height="14" rx="3" fill="#eff6ff" stroke="#2563eb" stroke-width="0.9"/>
+    <path d="M51 35 L61 32 v10 l-10 -3 z" fill="#3b82f6" stroke="#475569" stroke-width="0.8"/>
+    <line x1="63" y1="37" x2="87" y2="37" stroke="#0891b2" stroke-width="0.8" stroke-dasharray="2 2.6"/>
+    <line x1="90" y1="30" x2="90" y2="96" stroke="#475569" stroke-width="1.0"/>
+    <line x1="86" y1="60" x2="94" y2="60" stroke="#8b5cf6" stroke-width="0.85"/>
+    <line x1="86" y1="72" x2="94" y2="72" stroke="#8b5cf6" stroke-width="0.85"/>
+    <polygon points="90,31 97,37 90,43 83,37" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="0.85"/>
+    <circle cx="90" cy="37" r="2" fill="#0891b2"/>`,
+      'site-capture': `
+    <ellipse cx="64" cy="54" rx="41" ry="14" fill="none" stroke="#93c5fd" stroke-width="0.8" stroke-dasharray="2.4 3" transform="rotate(-10 64 54)"/>
+    <path d="M64 66 L48 96 M64 66 L64 96 M64 66 L80 96" stroke="#475569" stroke-width="1.0"/>
+    <line x1="55" y1="83" x2="73" y2="83" stroke="#3b82f6" stroke-width="0.85"/>
+    <path d="M55 43 L58 37 h12 l3 6" fill="#ffffff" stroke="#475569" stroke-width="0.82"/>
+    <rect x="45" y="42" width="38" height="25" rx="7" fill="#eff6ff" stroke="#2563eb" stroke-width="0.9"/>
+    <circle cx="64" cy="54.5" r="9.5" fill="#ffffff" stroke="#8b5cf6" stroke-width="0.85"/>
+    <circle cx="64" cy="54.5" r="5.2" fill="#06b6d4"/>
+    <circle cx="62" cy="52.5" r="1.4" fill="#ffffff"/>
+    <rect x="73" y="46" width="6" height="2.6" rx="1.3" fill="#3b82f6"/>
+    <g transform="translate(94 25)">
+      <rect x="-7" y="-4.5" width="14" height="9.5" rx="3.5" fill="#ffffff" stroke="#38bdf8" stroke-width="0.8"/>
+      <circle cx="0" cy="0.5" r="2.1" fill="#8b5cf6"/>
+      <path d="M-7 -4 l-4 -4 M7 -4 l4 -4" stroke="#475569" stroke-width="0.8"/>
+      <line x1="-17" y1="-8" x2="-6" y2="-8" stroke="#0ea5e9" stroke-width="0.9"/>
+      <line x1="6" y1="-8" x2="17" y2="-8" stroke="#0ea5e9" stroke-width="0.9"/>
+    </g>`,
+      'submission': `
+    <rect x="48" y="26" width="32" height="40" rx="4" fill="#ffffff" stroke="#475569" stroke-width="0.85"/>
+    <line x1="55" y1="36" x2="73" y2="36" stroke="#2563eb" stroke-width="0.9"/>
+    <line x1="55" y1="43" x2="70" y2="43" stroke="#93c5fd" stroke-width="0.75"/>
+    <line x1="55" y1="50" x2="73" y2="50" stroke="#93c5fd" stroke-width="0.75"/>
+    <line x1="55" y1="57" x2="66" y2="57" stroke="#93c5fd" stroke-width="0.75"/>
+    <path d="M36 60 h56 a4 4 0 0 1 4 4 v26 a4 4 0 0 1 -4 4 h-56 a4 4 0 0 1 -4 -4 v-26 a4 4 0 0 1 4 -4 z" fill="#eff6ff" stroke="#2563eb" stroke-width="0.9"/>
+    <path d="M33 64 L64 82 L95 64" fill="none" stroke="#3b82f6" stroke-width="0.75"/>
+    <path d="M33 90 L52 76 M95 90 L76 76" fill="none" stroke="#93c5fd" stroke-width="0.75"/>
+    <circle cx="90" cy="60" r="8" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="0.85"/>
+    <path d="M86.5 60 L89 62.5 L93.5 57.5" fill="none" stroke="#0891b2" stroke-width="1.2"/>`,
+      'bimbox': `
+    <polygon points="40,70 64,82 88,70 88,86 64,98 40,86" fill="#eff6ff" stroke="#2563eb" stroke-width="0.9"/>
+    <polygon points="64,82 88,70 88,86 64,98" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="0.9"/>
+    <line x1="64" y1="82" x2="64" y2="98" stroke="#2563eb" stroke-width="0.82"/>
+    <polygon points="40,70 28,63 48,57 64,64" fill="#ffffff" stroke="#475569" stroke-width="0.78"/>
+    <polygon points="88,70 100,63 80,57 64,64" fill="#ffffff" stroke="#475569" stroke-width="0.78"/>
+    <polygon points="64,26 78,34 64,42 50,34" fill="#ecfeff" stroke="#0891b2" stroke-width="0.85"/>
+    <polygon points="50,34 64,42 64,56 50,48" fill="#cffafe" stroke="#0891b2" stroke-width="0.78"/>
+    <polygon points="64,42 78,34 78,48 64,56" fill="#a5f3fc" stroke="#0e7490" stroke-width="0.78"/>
+    <path d="M43 42 l-5 -3 M85 42 l5 -3" stroke="#38bdf8" stroke-width="0.82"/>
+    <circle cx="64" cy="20" r="2.2" fill="#8b5cf6"/>`,
+      'files': `
+    <path d="M26 44 h22 l5 7 h47 a5 5 0 0 1 5 5 v12 h-84 v-19 a5 5 0 0 1 5 -5 z" fill="#eff6ff" stroke="#2563eb" stroke-width="0.9"/>
+    <g transform="rotate(-9 62 60)">
+      <rect x="44" y="34" width="34" height="44" rx="3" fill="#ecfeff" stroke="#0891b2" stroke-width="0.78"/>
+    </g>
+    <g transform="rotate(5 66 58)">
+      <rect x="50" y="30" width="34" height="44" rx="3" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="0.82"/>
+      <line x1="57" y1="40" x2="77" y2="40" stroke="#2563eb" stroke-width="0.9"/>
+      <line x1="57" y1="47" x2="73" y2="47" stroke="#60a5fa" stroke-width="0.75"/>
+      <line x1="57" y1="54" x2="77" y2="54" stroke="#93c5fd" stroke-width="0.75"/>
+    </g>
+    <path d="M22 62 h84 a4 4 0 0 1 4 4.4 l-3 25 a5 5 0 0 1 -5 4.6 h-76 a5 5 0 0 1 -5 -4.6 l-3 -25 a4 4 0 0 1 4 -4.4 z" fill="#ffffff" stroke="#2563eb" stroke-width="0.9"/>
+    <line x1="54" y1="79" x2="74" y2="79" stroke="#93c5fd" stroke-width="0.82"/>
+    <circle cx="47" cy="79" r="2" fill="#38bdf8"/>`,
+      'search': `
+    <g transform="rotate(-4 58 58)">
+      <rect x="34" y="28" width="48" height="62" rx="5" fill="#f0f9ff" stroke="#0284c7" stroke-width="0.9"/>
+      <line x1="42" y1="40" x2="66" y2="40" stroke="#bae6fd" stroke-width="0.82"/>
+      <line x1="42" y1="50" x2="74" y2="50" stroke="#bae6fd" stroke-width="0.82"/>
+      <line x1="42" y1="60" x2="62" y2="60" stroke="#bae6fd" stroke-width="0.82"/>
+      <line x1="42" y1="70" x2="74" y2="70" stroke="#bae6fd" stroke-width="0.82"/>
+      <line x1="42" y1="80" x2="58" y2="80" stroke="#bae6fd" stroke-width="0.82"/>
+    </g>
+    <line x1="79" y1="71" x2="97" y2="91" stroke="#2563eb" stroke-width="2.2"/>
+    <line x1="83" y1="76" x2="94" y2="88" stroke="#93c5fd" stroke-width="0.8"/>
+    <circle cx="66" cy="58" r="23" fill="#ecfeff" fill-opacity="0.8" stroke="#0891b2" stroke-width="1.0"/>
+    <path d="M51 49 A 17 17 0 0 1 68 39" fill="none" stroke="#a5f3fc" stroke-width="0.9"/>
+    <circle cx="66" cy="58" r="9" fill="none" stroke="#14b8a6" stroke-width="0.82" stroke-dasharray="2.4 3"/>
+    <line x1="62.5" y1="58" x2="69.5" y2="58" stroke="#2563eb" stroke-width="1.2"/>
+    <circle cx="66" cy="58" r="1.8" fill="#8b5cf6"/>`,
+      'issue': `
+    <g transform="rotate(-4 64 76)">
+      <rect x="28" y="56" width="72" height="40" rx="5" fill="#f0f9ff" stroke="#475569" stroke-width="0.9"/>
+      <path d="M36 89 v-17 h15 v-8 h21 v10 h20" fill="none" stroke="#bae6fd" stroke-width="0.8"/>
+      <line x1="36" y1="63" x2="55" y2="63" stroke="#93c5fd" stroke-width="0.8"/>
+      <line x1="59" y1="63" x2="66" y2="63" stroke="#38bdf8" stroke-width="0.8"/>
+    </g>
+    <ellipse cx="66" cy="79" rx="21" ry="8" fill="none" stroke="#a5f3fc" stroke-width="0.75" stroke-dasharray="2 3"/>
+    <ellipse cx="66" cy="79" rx="12" ry="4.6" fill="none" stroke="#14b8a6" stroke-width="0.85" stroke-dasharray="2.2 2.6"/>
+    <path d="M66 29 a15 15 0 0 1 15 15 c0 11 -15 33 -15 33 s-15 -22 -15 -33 a15 15 0 0 1 15 -15 z" fill="#eff6ff" stroke="#2563eb" stroke-width="0.95"/>
+    <circle cx="66" cy="44" r="9.2" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="0.85"/>
+    <line x1="66" y1="38.5" x2="66" y2="45.5" stroke="#1d4ed8" stroke-width="1.5"/>
+    <circle cx="66" cy="49.5" r="1.5" fill="#1d4ed8"/>
+    <path d="M40 34 a30 30 0 0 1 10 -9" fill="none" stroke="#a5f3fc" stroke-width="0.8" stroke-dasharray="2.4 3"/>
+    <circle cx="99" cy="38" r="2" fill="#38bdf8"/>
+    <circle cx="31" cy="46" r="1.6" fill="#8b5cf6"/>`,
+      'rfi': `
+    <rect x="32" y="26" width="54" height="40" rx="9" fill="#eff6ff" stroke="#2563eb" stroke-width="0.9"/>
+    <path d="M48 66 v11 l13 -11" fill="#eff6ff" stroke="#2563eb" stroke-width="0.9"/>
+    <path d="M51 41 c0 -8 12 -9 14 -2 c1.6 6 -6 7 -6 12" fill="none" stroke="#2563eb" stroke-width="1.6"/>
+    <circle cx="59" cy="57" r="1.8" fill="#2563eb"/>
+    <line x1="72" y1="38" x2="79" y2="38" stroke="#93c5fd" stroke-width="0.82"/>
+    <line x1="72" y1="45" x2="79" y2="45" stroke="#bfdbfe" stroke-width="0.82"/>
+    <rect x="66" y="72" width="38" height="22" rx="8" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="0.82"/>
+    <circle cx="77" cy="83" r="2" fill="#3b82f6"/>
+    <circle cx="85" cy="83" r="2" fill="#8b5cf6"/>
+    <circle cx="93" cy="83" r="2" fill="#0891b2"/>`,
+      'field-note': `
+    <rect x="38" y="30" width="46" height="62" rx="5" fill="#eff6ff" stroke="#2563eb" stroke-width="0.9"/>
+    <line x1="48" y1="31" x2="48" y2="91" stroke="#bfdbfe" stroke-width="0.75"/>
+    <path d="M34 40 h10 M34 52 h10 M34 64 h10 M34 76 h10" stroke="#2563eb" stroke-width="0.9"/>
+    <line x1="54" y1="44" x2="76" y2="44" stroke="#2563eb" stroke-width="0.9"/>
+    <line x1="54" y1="54" x2="72" y2="54" stroke="#38bdf8" stroke-width="0.75"/>
+    <line x1="54" y1="64" x2="78" y2="64" stroke="#8b5cf6" stroke-width="0.75"/>
+    <line x1="54" y1="74" x2="68" y2="74" stroke="#a78bfa" stroke-width="0.75"/>
+    <circle cx="49" cy="84" r="2" fill="#0891b2"/>
+    <line x1="56" y1="84" x2="70" y2="84" stroke="#67e8f9" stroke-width="0.75"/>
+    <g transform="rotate(30 90 58)">
+      <path d="M86 26 h9 v38 h-9 z" fill="#ede9fe" stroke="#8b5cf6" stroke-width="0.82"/>
+      <path d="M86 64 h9 l-4.5 8 z" fill="#3b82f6" stroke="#8b5cf6" stroke-width="0.75"/>
+      <line x1="86" y1="36" x2="95" y2="36" stroke="#8b5cf6" stroke-width="0.9"/>
+    </g>`,
+      'task': `
+    <rect x="28" y="34" width="52" height="58" rx="7" fill="#eff6ff" stroke="#2563eb" stroke-width="0.9"/>
+    <rect x="44" y="29" width="20" height="8.5" rx="3.5" fill="#ffffff" stroke="#2563eb" stroke-width="0.82"/>
+    <rect x="37" y="47" width="10" height="10" rx="2.5" fill="#dbeafe" stroke="#3b82f6" stroke-width="0.82"/>
+    <path d="M39.5 52 L41.8 54.4 L45 50.4" fill="none" stroke="#2563eb" stroke-width="1.0"/>
+    <line x1="53" y1="52" x2="71" y2="52" stroke="#2563eb" stroke-width="0.82"/>
+    <rect x="37" y="63" width="10" height="10" rx="2.5" fill="#ede9fe" stroke="#8b5cf6" stroke-width="0.78"/>
+    <line x1="53" y1="68" x2="69" y2="68" stroke="#8b5cf6" stroke-width="0.82"/>
+    <rect x="37" y="79" width="10" height="10" rx="2.5" fill="#ecfeff" stroke="#0891b2" stroke-width="0.78"/>
+    <line x1="53" y1="84" x2="65" y2="84" stroke="#0891b2" stroke-width="0.82"/>
+    <g transform="translate(91 70)">
+      <circle r="14" fill="#ffffff" stroke="#e0f2fe" stroke-width="2.2"/>
+      <circle r="14" fill="none" stroke="#8b5cf6" stroke-width="2.2" stroke-dasharray="53 88" stroke-linecap="round" transform="rotate(-90)"/>
+      <path d="M-4.5 0 L-1.5 3.2 L5 -3.6" fill="none" stroke="#0891b2" stroke-width="1.2"/>
+    </g>`,
+      'planner': `
+    <rect x="26" y="32" width="76" height="60" rx="8" fill="#eff6ff" stroke="#2563eb" stroke-width="0.9"/>
+    <line x1="26" y1="46" x2="102" y2="46" stroke="#2563eb" stroke-width="0.82"/>
+    <path d="M44 27 v8 M64 27 v8 M84 27 v8" stroke="#2563eb" stroke-width="1.0"/>
+    <line x1="34" y1="39" x2="48" y2="39" stroke="#93c5fd" stroke-width="0.82"/>
+    <rect x="34" y="54" width="30" height="6.5" rx="3.25" fill="#2563eb"/>
+    <rect x="48" y="66" width="32" height="6.5" rx="3.25" fill="#0ea5e9"/>
+    <rect x="62" y="78" width="24" height="6.5" rx="3.25" fill="#8b5cf6"/>
+    <path d="M64 60.5 v5.5 M80 72.5 v5.5" stroke="#93c5fd" stroke-width="0.7" stroke-dasharray="1.6 2.2"/>
+    <rect x="86" y="53" width="9" height="9" rx="1.8" transform="rotate(45 90.5 57.5)" fill="#06b6d4" stroke="#ffffff" stroke-width="1.0"/>
+    <circle cx="90.5" cy="57.5" r="1.6" fill="#ffffff"/>`,
+    };
+
+    function lineColorSvg(key) {
+      return `<svg viewBox="0 0 128 128" class="w-24 h-24" fill="none">
+        <defs>
+          <radialGradient id="lc-${key}-halo" cx="50%" cy="46%" r="54%">
+            <stop offset="0%" stop-color="#e0f2fe" stop-opacity="0.55"/>
+            <stop offset="50%" stop-color="#ede9fe" stop-opacity="0.30"/>
+            <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+          </radialGradient>
+          <radialGradient id="lc-${key}-shadow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#475569" stop-opacity="0.12"/>
+            <stop offset="100%" stop-color="#475569" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <circle cx="64" cy="58" r="44" fill="url(#lc-${key}-halo)"/>
+        <ellipse cx="64" cy="99" rx="33" ry="6" fill="url(#lc-${key}-shadow)"/>
+        <line x1="22" y1="99" x2="106" y2="99" stroke="#cbd5e1" stroke-width="0.75" stroke-linecap="round" stroke-dasharray="1.5 5"/>
+        <g stroke-linecap="round" stroke-linejoin="round">${LINECOLOR_BODIES[key]}</g>
+      </svg>`;
+    }
+
+    const LINECOLOR_SECTIONS = Object.fromEntries(Object.entries(SECTIONS).map(([key, item]) => [key, {
+      title: item.title,
+      subtitle: item.subtitle,
+      svg: lineColorSvg(key)
+    }]));
+
+    const POP_BODIES = {
+      drawing: '<rect x="40" y="39" width="42" height="38" rx="4" fill="#e0f2fe"/><path d="M47 69V47h17v10h11v12z" stroke="#3b82f6" stroke-width="2"/><path d="M45 84h26" stroke="#cbdfee" stroke-width="3"/>',
+      model: '<path d="M61 32l23 13-23 14-23-14z" fill="#7dd3fc"/><path d="M38 45l23 14v27L38 73z" fill="#3b82f6"/><path d="M61 59l23-14v28L61 86z" fill="#1d4ed8"/><path d="M61 32v9" stroke="#fff" stroke-width="2"/>',
+      structure: '<path d="M61 50v13M43 76V63h36v13" stroke="#99c9ec" stroke-width="3"/><rect x="50" y="35" width="22" height="17" rx="4" fill="#2563eb"/><rect x="33" y="73" width="20" height="15" rx="4" fill="#38bdf8"/><rect x="69" y="73" width="20" height="15" rx="4" fill="#fbbf24"/>',
+      shared: '<circle cx="44" cy="62" r="9" fill="#38bdf8"/><circle cx="78" cy="42" r="9" fill="#14b8a6"/><circle cx="78" cy="81" r="9" fill="#fb923c"/><path d="M52 58l18-11M52 67l18 10" stroke="#99c9ec" stroke-width="3"/>',
+      issue: '<path d="M61 34l27 45H34z" fill="#fbbf24" stroke="#f59e0b" stroke-width="2"/><path d="M61 49v13" stroke="#fff" stroke-width="5"/><circle cx="61" cy="71" r="2.6" fill="#fff"/>',
+      rfi: '<path d="M39 37h45v34H59L46 82V71h-7z" fill="#2563eb"/><path d="M54 49c0-9 17-9 17 0 0 5-9 5-9 11" stroke="#fff" stroke-width="3"/><circle cx="62" cy="65" r="1.8" fill="#fff"/>',
+      'field-note': '<rect x="40" y="32" width="40" height="53" rx="5" fill="#fbbf24"/><path d="M48 45h23M48 54h23M48 63h16" stroke="#fff" stroke-width="3"/><path d="M69 77l16-30 6 3-16 30-7 6z" fill="#2563eb"/>',
+      task: '<rect x="39" y="32" width="40" height="55" rx="5" fill="#fb923c"/><path d="M47 44h23M47 54h23M47 64h16M47 74h16" stroke="#fed7aa" stroke-width="3"/>',
+      planner: '<rect x="36" y="39" width="50" height="44" rx="6" fill="#fff" stroke="#14b8a6" stroke-width="2"/><path d="M36 51h50" stroke="#14b8a6" stroke-width="7"/><path d="M47 34v10M74 34v10" stroke="#1d4ed8" stroke-width="4"/><path d="M46 62h7M61 62h7M46 73h7" stroke="#99dcd5" stroke-width="4"/>',
+      survey: '<circle cx="61" cy="61" r="23" fill="#cffafe"/><circle cx="61" cy="61" r="15" stroke="#22d3ee" stroke-width="2"/><path d="M61 34v54M34 61h54" stroke="#38bdf8" stroke-width="2"/><circle cx="61" cy="61" r="5" fill="#1d4ed8"/>',
+      'site-capture': '<path d="M37 47h11l5-9h17l5 9h11v34H37z" fill="#38bdf8"/><circle cx="61" cy="64" r="13" fill="#fff"/><circle cx="61" cy="64" r="8" fill="#2563eb"/><circle cx="79" cy="53" r="2" fill="#fff"/>',
+      submission: '<rect x="35" y="45" width="51" height="35" rx="5" fill="#99dcd5"/><path d="M36 49l25 18 24-18" stroke="#fff" stroke-width="2"/><path d="M61 57V31m-8 8 8-8 8 8" stroke="#fb923c" stroke-width="4"/>',
+      bimbox: '<path d="M61 33l26 14-26 14-26-14z" fill="#2563eb"/><path d="M35 60l26 14 26-14" stroke="#38bdf8" stroke-width="8"/><path d="M35 75l26 14 26-14" stroke="#99dcd5" stroke-width="8"/>',
+      files: '<path d="M35 42h21l7 8h25v35H35z" fill="#f59e0b"/><rect x="43" y="37" width="32" height="35" rx="4" fill="#fff"/><path d="M35 57h53l-5 29H39z" fill="#fcd34d"/><path d="M49 45h19M49 51h13" stroke="#cbdfee" stroke-width="2"/>',
+      search: '<circle cx="57" cy="56" r="19" fill="#cffafe" stroke="#38bdf8" stroke-width="3"/><path d="M71 71l15 15" stroke="#2563eb" stroke-width="8"/><path d="M47 54a10 10 0 0 1 10-9" stroke="#fff" stroke-width="3"/>'
+    };
+
+    function confettiPopSvg(key) {
+      const id = 'pop-' + key;
+      const badgeColor = key === 'issue' ? '#f43f5e' : key === 'submission' ? '#10b981' : '#2563eb';
+      const badge = key === 'task' || key === 'submission'
+        ? '<path d="M82 83l4 4 8-10" stroke="#fff" stroke-width="3" fill="none"/>'
+        : key === 'issue'
+          ? '<path d="M87 76v9" stroke="#fff" stroke-width="3"/><circle cx="87" cy="90" r="1.5" fill="#fff"/>'
+          : '<path d="M83 79l8 8m0-8-8 8" stroke="#fff" stroke-width="2.5"/>';
+      return `<svg viewBox="0 0 128 128" class="w-24 h-24" fill="none">
+        <defs><filter id="${id}-shadow" x="-40%" y="-40%" width="180%" height="190%"><feDropShadow dx="1" dy="6" stdDeviation="5" flood-color="#456580" flood-opacity=".18"/></filter></defs>
+        <circle cx="64" cy="64" r="43" fill="#eff7fc"/>
+        <rect x="35" y="23" width="62" height="67" rx="13" fill="#dceefa"/>
+        <g stroke-linecap="round" stroke-linejoin="round" filter="url(#${id}-shadow)">
+          <rect x="29" y="28" width="65" height="68" rx="12" fill="#fff" stroke="#60a5fa" stroke-width="1.4"/>
+          ${POP_BODIES[key]}
+        </g>
+        <g stroke-linecap="round" filter="url(#${id}-shadow)"><circle cx="87" cy="83" r="13" fill="${badgeColor}"/>${badge}</g>
+        <circle cx="26" cy="29" r="3.7" fill="#10b981"/>
+        <circle cx="106" cy="43" r="3.3" fill="#fb923c"/>
+        <circle cx="55" cy="106" r="2.4" fill="#38bdf8"/>
+        <circle cx="25" cy="89" r="1.8" fill="#a7f3d0"/>
+        <circle cx="91" cy="20" r="1.4" fill="#99dcd5"/>
+      </svg>`;
+    }
+    const POP_SECTIONS = Object.fromEntries(Object.entries(SECTIONS).map(([key, item]) => [key, {
+      title: item.title, subtitle: item.subtitle, svg: confettiPopSvg(key)
+    }]));
+
+    const ICON_SETS = { blue: SECTIONS, clay: CLAY_SECTIONS, line: LINE_SECTIONS, clay3d: CLAY3D_SECTIONS, claycolor: CLAY_COLOR_SECTIONS, neue: NEUE_SECTIONS, linepro: LINEPRO_SECTIONS, allblue: ALLBLUE_SECTIONS, linecolor: LINECOLOR_SECTIONS, pop: POP_SECTIONS };
+    let activeIconSet = 'blue';
+    let activeSection = 'drawing';
+
+    const SECTION_LABELS = {
+      drawing: 'Drawings', model: '3D Models', structure: 'Project Structure',
+      shared: 'Shared Files', issue: 'Issues', rfi: 'RFI', 'field-note': 'Field Notes',
+      task: 'Tasks', planner: 'Planner', survey: 'Survey Data', 'site-capture': 'Site Capture',
+      submission: 'Submissions', bimbox: 'BIMBOX Data', files: 'Custom Folder', search: 'Search'
+    };
+
+    function renderTabs() {
+      document.getElementById('tabs').innerHTML = Object.entries(ICON_SETS[activeIconSet]).map(([key, item]) => {
+        const label = SECTION_LABELS[key];
+        return `<button onclick="selectSection('${key}')" id="tab-${key}" type="button" role="tab"
+          aria-label="${label}" title="${label}" aria-selected="false"
+          class="tab-btn shrink-0 w-12 h-12 rounded-lg flex items-center justify-center bg-white text-slate-600 hover:bg-blue-50 transition">
+          ${item.svg}
+        </button>`;
+      }).join('');
+    }
+
+    function selectIconSet(set) {
+      activeIconSet = set;
+      document.body.classList.toggle('pop-set', set === 'pop');
+      document.getElementById('set-pop').classList.toggle('active', set === 'pop');
+      document.body.classList.toggle('clay-set', set === 'clay');
+      document.body.classList.toggle('line-set', set === 'line');
+      document.body.classList.toggle('clay3d-set', set === 'clay3d' || set === 'claycolor');
+      document.body.classList.toggle('clay-blue-shade', set === 'clay3d');
+      document.getElementById('set-claycolor').classList.toggle('active', set === 'claycolor');
+      document.body.classList.toggle('neue-set', set === 'neue');
+      document.body.classList.toggle('linepro-set', set === 'linepro');
+      document.body.classList.toggle('allblue-set', set === 'allblue');
+      document.body.classList.toggle('linecolor-set', set === 'linecolor');
+      document.getElementById('set-blue').className = `set-tab rounded-md px-3 py-2 text-xs font-semibold ${set === 'blue' ? 'active' : 'text-slate-500'}`;
+      document.getElementById('set-clay').className = `set-tab rounded-md px-3 py-2 text-xs font-semibold ${set === 'clay' ? 'active' : 'text-slate-500'}`;
+      document.getElementById('set-line').className = `set-tab rounded-md px-3 py-2 text-xs font-semibold ${set === 'line' ? 'active' : 'text-slate-500'}`;
+      document.getElementById('set-clay3d').className = `set-tab rounded-md px-3 py-2 text-xs font-semibold ${set === 'clay3d' ? 'active' : 'text-slate-500'}`;
+      document.getElementById('set-neue').className = `set-tab rounded-md px-3 py-2 text-xs font-semibold ${set === 'neue' ? 'active' : 'text-slate-500'}`;
+      document.getElementById('set-linepro').className = `set-tab rounded-md px-3 py-2 text-xs font-semibold ${set === 'linepro' ? 'active' : 'text-slate-500'}`;
+      document.getElementById('set-allblue').className = `set-tab rounded-md px-3 py-2 text-xs font-semibold ${set === 'allblue' ? 'active' : 'text-slate-500'}`;
+      document.getElementById('set-linecolor').className = `set-tab rounded-md px-3 py-2 text-xs font-semibold ${set === 'linecolor' ? 'active' : 'text-slate-500'}`;
+      renderTabs();
+      selectSection(activeSection);
+    }
+
+    function selectSection(key) {
+      const data = ICON_SETS[activeIconSet][key];
+      if (!data) return;
+      activeSection = key;
+
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.className = "tab-btn shrink-0 w-12 h-12 rounded-lg flex items-center justify-center bg-white text-slate-600 hover:bg-blue-50 transition";
+        btn.setAttribute('aria-selected', 'false');
+      });
+      const activeBtn = document.getElementById(`tab-${key}`);
+      if (activeBtn) {
+        activeBtn.className = "tab-btn shrink-0 w-12 h-12 rounded-lg flex items-center justify-center bg-blue-50 text-blue-700 transition";
+        activeBtn.setAttribute('aria-selected', 'true');
+      }
+
+      const container = document.getElementById('preview-container');
+      container.innerHTML = `
+        <div class="relative mb-4 flex items-center justify-center">
+          <div class="absolute -inset-4 rounded-full bg-blue-100/60 blur-xl"></div>
+          ${data.svg}
+        </div>
+        <h3 class="text-base font-bold text-slate-800 tracking-tight">${data.title}</h3>
+        <p class="text-[13px] text-slate-500 mt-1 max-w-sm">${data.subtitle}</p>
+        <div class="mt-5 flex gap-2">
+          ${key === 'search' 
+            ? `<button class="px-3.5 py-1.5 text-xs font-medium bg-white border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50">Clear search</button>`
+            : `<button class="px-3.5 py-1.5 text-xs font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-xs">Upload files</button>
+               <button class="px-3.5 py-1.5 text-xs font-medium bg-white border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50">New folder</button>`
+          }
+        </div>
+      `;
+    }
+
+    selectIconSet('blue');
+  </script>
+</body>
+</html>
